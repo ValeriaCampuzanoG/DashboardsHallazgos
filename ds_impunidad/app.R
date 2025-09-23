@@ -64,7 +64,7 @@ ui <-  dashboardPage(
         fluidRow(
           bs4Card(
             width = 12,
-            title = "¿Cómo se interpreta lol?",
+            title = "¿Cómo se interpreta?",
             solidHeader = TRUE,
             collapsible = TRUE,
             div(
