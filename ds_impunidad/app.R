@@ -57,20 +57,22 @@ ui <-  dashboardPage(
               column(
                 width = 6, 
                 infoBox(
-                  width = 12, 
-                  title = "Entidad con menor impunidad", 
+                  width = 12,
+                  title = "Entidad con menor impunidad",
                   value = "Querétaro",
                   icon = icon("arrow-down"),
                   color = "fuchsia")
               ),
               column( width = 6, 
-                      infoBox(
-                        width = 12, 
-                        title = "Entidad con mayor impunidad", 
-                        value = "Oaxaca",
-                        icon = icon("arrow-up"),
-                        color = "fuchsia"))
-            ),
+               bs4ValueBoxOutput("box_impunidad", width = 12))), 
+            #   column( width = 6,
+            #           infoBox(
+            #             width = 12,
+            #             title = "Entidad con mayor impunidad",
+            #             value = "Oaxaca",
+            #             icon = icon("arrow-up"),
+            #             color = "fuchsia"))
+            # ),
             div(leafletOutput("mapa_impunidad", height = "95vh"), style = "margin-top: 15px;")
           )
         ),
@@ -109,13 +111,15 @@ ui <-  dashboardPage(
               column(
                 width = 6,
                 h5( style = "text-align: center; margin-bottom: 10px;"),
-                plotlyOutput("grafica_barras_impunidad", height = "60vh") %>% withSpinner()
+                plotlyOutput("grafica_barras_impunidad", height = "80vh") %>% withSpinner()
               ),
               column(
                 width = 6,
+                h5("", style = "text-align: center; margin-bottom: 10px;"),
+                plotlyOutput("grafica_lineas_impunidad", height = "80vh") %>% withSpinner(), 
                 shinyWidgets::pickerInput(
                   inputId = "seleccion_entidades_lineas_impunidad",
-                  label = NULL,
+                  label = "Selecciona la(s) entidad(es):",
                   choices = unique(bd_impunidad$entidad),
                   multiple = TRUE,
                   selected = sort(x = unique(bd_impunidad$entidad)),
@@ -123,9 +127,7 @@ ui <-  dashboardPage(
                                  `deselect-all-text` = "Deseleccionar todas",
                                  `select-all-text` = "Seleccionar todas",
                                  `none-selected-text` = "Ninguna unidad seleccionada")
-                ),
-                h5("Serie 2019-2023", style = "text-align: center; margin-bottom: 10px;"),
-                plotlyOutput("grafica_lineas_impunidad", height = "60vh") %>% withSpinner()
+                )
               )
             )
           )
@@ -189,6 +191,28 @@ ui <-  dashboardPage(
 
 server <- function(input, output, session) {
   
+  #Caja de entidad con mayor impunidad
+  output$box_impunidad_mas <- renderValueBox({  
+    bs4ValueBox(  
+      value = vb_value,
+      subtitle = vb_subtitle,
+      icon = icon("arrow-up"), 
+      color = "fuchsia",
+      width = 12
+    )
+  })
+  
+  #Caja de entidad con menor impunidad
+  output$box_impunidad_menos <- renderValueBox({  
+    bs4ValueBox(  
+      value = vb_value,
+      subtitle = vb_subtitle,
+      icon = icon("arrow-down"), 
+      color = "fuchsia",
+      width = 12
+    )
+  })
+  
   #Tabla de impunidad 2023
   output$tablaImpunidad23 <- renderReactable({
     tab_imp2023
@@ -221,8 +245,8 @@ server <- function(input, output, session) {
   
   #Gráfica líneas de impunidad 
   output$grafica_lineas_impunidad <- renderPlotly({
-    gen_lineas_imp(ind_sel = input$opcionBarrasImpunidad)
-    
+    gen_lineas_imp(ind_sel = input$opcionBarrasImpunidad, 
+                   entidades_resaltadas = input$seleccion_entidades_lineas_impunidad)
   })
   
   #Mapa de impunidad

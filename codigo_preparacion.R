@@ -292,6 +292,74 @@ gen_lineas_imp <- function(ind_sel){
 gen_lineas_imp("Desestimaciones por no ser un delito")
 
 
+gen_lineas_imp <- function(ind_sel, entidades_resaltadas){
+  
+  datos_sel <- bd_impunidad %>%
+    #filter(nom_indicador %in% opciones_impunidad) %>%
+    filter(nom_indicador == ind_sel) %>% 
+    left_join(catalogo_estatal) 
+  
+  
+  datos_sel <- datos_sel %>%
+    mutate(
+      is_selected = entidad %in% entidades_resaltadas,
+      line_color  = ifelse(is_selected, "#C1766F", "grey80"),
+      point_color = ifelse(is_selected, "#541F3F", "grey75"),
+      line_alpha  = ifelse(is_selected, 1, 0.1)
+    )
+  
+  
+  datos_labels <- datos_sel %>%
+    filter(is_selected) %>%
+    group_by(entidad) %>%
+    slice_max(ano, n = 1, with_ties = FALSE) %>%
+    ungroup()
+  
+  g <- datos_sel %>% 
+    ggplot(aes(x = ano, 
+               y = valor, 
+               group = entidad, 
+               text = if(ind_sel == "Índice de impunidad"){
+                 paste0(
+                   "<span style='font-size:24px;'><b>", entidad, " " ,ano,  "</b></span><br><br>",
+                   "<span style='font-size:18px;'>", prettyNum(round(valor, 2), big.mark = ","), " %")} else {
+                     paste0(
+                       "<span style='font-size:24px;'><b>", entidad, " " ,ano,  "</b></span><br><br>",
+                       "<span style='font-size:18px;'>", prettyNum(round(valor, 2), big.mark = ",")) 
+                   }
+    )) +
+    theme_bw() +
+    #geom_line(aes(color = line_color, alpha = line_alpha), linewidth = 0.5, show.legend = FALSE) +
+    #geom_point(aes(color = point_color, alpha = line_alpha), size = 2, show.legend = FALSE) +
+    geom_line(aes(color = I(line_color), alpha = line_alpha), size = 0.5, show.legend = FALSE) +
+    geom_point(aes(color = I(point_color), alpha = line_alpha), size = 2, show.legend = FALSE) +
+    scale_alpha_identity() +
+    geom_text(data = datos_labels, 
+              #inherit.aes = FALSE,
+              aes(x = ano, y = valor, label = entidad),
+              hjust = -0.1, vjust = 0.5, size = 3, color = "#541F3F") +
+    labs(
+      x = "Año",
+      y = ""
+    ) +
+    scale_y_continuous(
+      labels = if(ind_sel == "Índice de impunidad") {
+        function(x) paste0(x, "%")
+      } else {
+        comma_format()
+      }
+    ) + 
+    scale_x_discrete(expand = expansion(mult = c(0.05, 0.15))) +
+    theme(
+      panel.grid = element_blank(),
+      legend.position = "none")  # Remove legend completely
+  
+  ggplotly(g, tooltip = "text") %>% layout(showlegend = FALSE)
+}
+
+gen_lineas_imp("Desestimaciones por no ser un delito", "Oaxaca")
+
+
 
 # Tabla índice de Impunidad --------
 
