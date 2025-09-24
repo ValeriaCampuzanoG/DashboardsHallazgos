@@ -79,57 +79,78 @@ names(lista_indicadores_impunidad) <- unique(bd_impunidad$nom_indicador)
 
 lista_anos_imp <- unique(bd_impunidad$ano)
 
+# Entidades con más y menos impunidad -------
+
+fun_gen_caja_mayor <- function(ano_sel_imp){
+  
+  top_impunidad <- bd_impunidad %>%
+    filter(nom_indicador == "Índice de impunidad", 
+           ano == ano_sel_imp)  %>%
+    mutate(valor = as.numeric(valor)) %>%
+    slice_max(order_by = valor, n = 1, with_ties = FALSE) 
+  
+  
+  vb_value <- top_impunidad$entidad
+  vb_subtitle <- paste0(top_impunidad$valor, "%")
+}
+
+
+  
+
+bottom_impunidad <- bd_impunidad %>%
+  filter(nom_indicador == "Índice de impunidad", 
+         ano == ano_sel_imp)  %>%
+  mutate(valor = as.numeric(valor)) %>%
+  slice_max(order_by = valor, n = 1, with_ties = FALSE)  # use slice_min for “menor impunidad”
+
+ 
+
 
 # Mapa índice de Impunidad ----
 
 #Leaflet de solo un año 
 
 
-datos_sel_impunidad <- bd_impunidad %>%
-  filter(nom_indicador == "Índice de impunidad",
-         ano == "2021")
-
-
-
-mapx <- left_join(shp, datos_sel_impunidad, by = c("CVE_EDO" = "cve_ent"))
-
-mapx$ranking <- rank(mapx$valor, ties.method = "first")
-
-label <- paste0(
-  "<b style='font-size:25px;'>", mapx$ranking, "/32</b><br>",
-  "<b style='font-size:20px;'><span style='color:#9e3963;'>", mapx$entidad, "," ,mapx$ano,"</span> </b><br>",
-  "<span style='font-size:32px;'>",round(mapx$valor, 2), "%</span>")
-
-paleta <- colorNumeric(palette = color_scale,
-                       domain = mapx$valor, reverse = F)
-
-#paleta <- colorNumeric(palette = color_scale,
-#                       domain = c(0,100),
-#                       reverse = F)
-
-
-
-#pasos para un leaflet
-mapa_base_indice <-  #0. base de datos de la cual trabajará
-  leaflet(mapx) %>%  #1. llamar a leaflet
-  addProviderTiles("CartoDB.DarkMatter") %>%  #2. elegir el mapa base, hay un catálogo y es lo que está entre comillas
-  addPolygons(color = "white", #3. añadir polígono
-              fillColor = paleta(mapx$valor), #paleta de colores y adentro la columna de la que saca el valor
-              weight = .5, #tamaño linea
-              label = lapply(label, HTML),
-              fillOpacity = 0.8) %>%
-  addLegend(
-    opacity = .9,
-    position = "topright",
-    pal = paleta,
-    values = mapx$valor,
-    title = paste("Índice de impunidad<br>Añol:"),
-    labels = FALSE,
-    labFormat = function(type, cuts, p) {
-      return(c("Menor", "", "", "Mayor"))
-    })
-
-mapa_base_indice
+# datos_sel_impunidad <- bd_impunidad %>%
+#   filter(nom_indicador == "Índice de impunidad",
+#          ano == "2021")
+# mapx <- left_join(shp, datos_sel_impunidad, by = c("CVE_EDO" = "cve_ent"))
+# 
+# mapx$ranking <- rank(mapx$valor, ties.method = "first")
+# 
+# label <- paste0(
+#   "<b style='font-size:25px;'>", mapx$ranking, "/32</b><br>",
+#   "<b style='font-size:20px;'><span style='color:#9e3963;'>", mapx$entidad, "," ,mapx$ano,"</span> </b><br>",
+#   "<span style='font-size:32px;'>",round(mapx$valor, 2), "%</span>")
+# 
+# paleta <- colorNumeric(palette = color_scale,
+#                        domain = mapx$valor, reverse = F)
+# 
+# #paleta <- colorNumeric(palette = color_scale,
+# #                       domain = c(0,100),
+# #                       reverse = F)
+# 
+# #pasos para un leaflet
+# mapa_base_indice <-  #0. base de datos de la cual trabajará
+#   leaflet(mapx) %>%  #1. llamar a leaflet
+#   addProviderTiles("CartoDB.DarkMatter") %>%  #2. elegir el mapa base, hay un catálogo y es lo que está entre comillas
+#   addPolygons(color = "white", #3. añadir polígono
+#               fillColor = paleta(mapx$valor), #paleta de colores y adentro la columna de la que saca el valor
+#               weight = .5, #tamaño linea
+#               label = lapply(label, HTML),
+#               fillOpacity = 0.8) %>%
+#   addLegend(
+#     opacity = .9,
+#     position = "topright",
+#     pal = paleta,
+#     values = mapx$valor,
+#     title = paste("Índice de impunidad<br>Añol:"),
+#     labels = FALSE,
+#     labFormat = function(type, cuts, p) {
+#       return(c("Menor", "", "", "Mayor"))
+#     })
+# 
+# mapa_base_indice
 
 
 #shp <- read_sf("https://raw.githubusercontent.com/JuveCampos/Shapes_Resiliencia_CDMX_CIDE/master/geojsons/Division%20Politica/DivisionEstatal.geojson")

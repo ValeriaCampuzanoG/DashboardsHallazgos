@@ -63,8 +63,9 @@ ui <-  dashboardPage(
                   icon = icon("arrow-down"),
                   color = "fuchsia")
               ),
+              #bs4ValueBoxOutput("box_impunidad_mas", width = 12),
               column( width = 6, 
-               bs4ValueBoxOutput("box_impunidad", width = 12))), 
+                      bs4ValueBoxOutput("box_impunidad_mas", width = 12))), 
             #   column( width = 6,
             #           infoBox(
             #             width = 12,
@@ -164,24 +165,6 @@ ui <-  dashboardPage(
           )
           
         )
-        # fluidRow(
-        #   bs4Card(
-        #     width = 12,
-        #     title = "Tabla",
-        #     solidHeader = TRUE,
-        #     collapsible = TRUE,
-        #     div(
-        #       reactableOutput("tablaImpunidad"),
-        #       style = "margin-top:30px;"
-        #     )
-        #   )
-        # ) #,
-        # br(),
-        # div(
-        #   class = "footer",
-        #   footer_superior,
-        #   footer_inferior
-        # )
       )
     )
   ),
@@ -192,26 +175,37 @@ ui <-  dashboardPage(
 server <- function(input, output, session) {
   
   #Caja de entidad con mayor impunidad
-  output$box_impunidad_mas <- renderValueBox({  
-    bs4ValueBox(  
+  output$box_impunidad_mas <- renderValueBox({  # use renderInfoBox if using infoBox
+    top <- bd_impunidad %>%
+      filter(ano == input$anioBarrasImpunidad, nom_indicador == "Índice de impunidad") %>%
+      mutate(valor = as.numeric(valor)) %>%
+      slice_max(order_by = valor, n = 1, with_ties = FALSE)  # use slice_min for “menor impunidad”
+    
+    # Combine fields with paste0 if you want
+    vb_value <- paste0(top$entidad, " ", top$valor, " %" )
+    vb_subtitle <- paste0("Índice: ", sprintf("%.1f%%", top$valor))
+    
+    bs4ValueBox(  # use infoBox(...) if you picked infoBoxOutput
+      #title = "",
       value = vb_value,
-      subtitle = vb_subtitle,
-      icon = icon("arrow-up"), 
+      subtitle = "Entidad con menor impunidad",
+      icon = icon("arrow-up"),  # arrow-down if you show “menor impunidad”
       color = "fuchsia",
       width = 12
     )
   })
   
   #Caja de entidad con menor impunidad
-  output$box_impunidad_menos <- renderValueBox({  
-    bs4ValueBox(  
-      value = vb_value,
-      subtitle = vb_subtitle,
-      icon = icon("arrow-down"), 
-      color = "fuchsia",
-      width = 12
-    )
-  })
+  # output$box_impunidad_menos <- renderValueBox({  
+  #   bs4ValueBox(  
+  #     value = vb_value,
+  #     subtitle = vb_subtitle,
+  #     icon = icon("arrow-down"), 
+  #     color = "fuchsia",
+  #     width = 12
+  #   )
+  # })
+  # 
   
   #Tabla de impunidad 2023
   output$tablaImpunidad23 <- renderReactable({
