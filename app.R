@@ -1,5 +1,7 @@
 #Librerías 
 
+install.packages("renv")
+
 library(shiny)
 library(bs4Dash)
 library(plotly)

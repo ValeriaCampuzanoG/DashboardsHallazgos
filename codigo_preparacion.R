@@ -1,11 +1,24 @@
 options(scipen = 999)
+options(repos = c(CRAN = "https://cran.r-project.org/"))
+
 
 # Librerias 
-library(pacman)
-p_load(tidyverse, sf, readxl, ggrepel, DT, plotly, scales, leaflet, reactable, paletteer, fishualize,
-       htmltools, bslib, ggrepel)
-p_load(sysfonts, showtext)
+library(tidyverse)
+library(sf)
+library(readxl)
+library(ggrepel)
+library(DT)
+library(plotly)
+library(scales)
+library(leaflet)
+library(reactable)
+library(paletteer)
+library(fishualize)
+library(htmltools)
+library(bslib)
 library(fresh)
+library(sysfonts)
+library(showtext)
 
 
 # Cambiar colores 
@@ -80,7 +93,8 @@ color_scale <- rev(as.character(
 
 bd_impunidad <- read_excel("www/bd/bd_indice_impunidad.xlsx")
 catalogo_estatal <- read_excel("www/bd/catalogo_estatal.xlsx")
-shp <- read_sf("https://raw.githubusercontent.com/JuveCampos/Shapes_Resiliencia_CDMX_CIDE/master/geojsons/Division%20Politica/DivisionEstatal.geojson")
+#shp <- read_sf("https://raw.githubusercontent.com/JuveCampos/Shapes_Resiliencia_CDMX_CIDE/master/geojsons/Division%20Politica/DivisionEstatal.geojson")
+shp <- read_sf("www/DivisionEstatal.geojson")
 
 # Añadir cve 
 
