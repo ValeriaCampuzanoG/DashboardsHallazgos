@@ -245,36 +245,51 @@ gen_lineas_imp <- function(ind_sel){
     filter(nom_indicador == ind_sel) %>% 
     left_join(catalogo_estatal) 
   
+  # Get the last year for each entity to position labels
+  datos_labels <- datos_sel %>%
+    group_by(entidad) %>%
+    slice_max(ano, n = 1) %>%
+    ungroup()
   
   g <- datos_sel %>% 
     ggplot(aes(x = ano, 
                y = valor, 
                group = entidad, 
-               color = entidad,
-               text = paste0(
-                 "<span style='font-size:24px;'><b>", entidad, ", " ,ano,  "</b></span><br><br>",
-                 "<span style='font-size:18px;'>", prettyNum(round(valor, 2), big.mark = ","))
+               text = if(ind_sel == "Índice de impunidad"){
+                 paste0(
+                 "<span style='font-size:24px;'><b>", entidad, " " ,ano,  "</b></span><br><br>",
+                 "<span style='font-size:18px;'>", prettyNum(round(valor, 2), big.mark = ","), " %")} else {
+                   paste0(
+                     "<span style='font-size:24px;'><b>", entidad, " " ,ano,  "</b></span><br><br>",
+                     "<span style='font-size:18px;'>", prettyNum(round(valor, 2), big.mark = ",")) 
+                 }
     )) +
-    geom_line(size = 1) +
-    geom_point(size = 2) +
+    geom_line(size = 0.5, color = "#C1766FFF") +
+    geom_point(size = 2, color = "#541F3FFF") +
+    geom_text(data = datos_labels, 
+              aes(x = ano, y = valor, label = entidad),
+              hjust = -0.1, vjust = 0.5, size = 3, color = "#541F3FFF") +
     theme_bw() +
     labs(
       x = "Año",
-      y = "Porcentaje de impunidad",
-      color = "Entidad"
+      y = ""
     ) +
-    scale_y_continuous(labels = comma_format()) +
+    scale_y_continuous(
+      labels = if(ind_sel == "Índice de impunidad") {
+        function(x) paste0(x, "%")
+      } else {
+        comma_format()
+      }
+    ) + 
+    scale_x_discrete(expand = expansion(mult = c(0.05, 0.15))) +
     theme(
-      panel.grid.minor = element_blank(),
-      legend.position = "bottom")
+      panel.grid = element_blank(),
+      legend.position = "none")  # Remove legend completely
   
   ggplotly(g, tooltip = "text")
-  
-  
 }
 
-
-gen_lineas_imp("Índice de impunidad")
+gen_lineas_imp("Desestimaciones por no ser un delito")
 
 
 

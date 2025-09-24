@@ -113,6 +113,17 @@ ui <-  dashboardPage(
               ),
               column(
                 width = 6,
+                shinyWidgets::pickerInput(
+                  inputId = "seleccion_entidades_lineas_impunidad",
+                  label = NULL,
+                  choices = unique(bd_impunidad$entidad),
+                  multiple = TRUE,
+                  selected = sort(x = unique(bd_impunidad$entidad)),
+                  options = list(`actions-box` = TRUE,
+                                 `deselect-all-text` = "Deseleccionar todas",
+                                 `select-all-text` = "Seleccionar todas",
+                                 `none-selected-text` = "Ninguna unidad seleccionada")
+                ),
                 h5("Serie 2019-2023", style = "text-align: center; margin-bottom: 10px;"),
                 plotlyOutput("grafica_lineas_impunidad", height = "60vh") %>% withSpinner()
               )
