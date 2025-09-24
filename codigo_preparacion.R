@@ -116,11 +116,11 @@ lista_anos_imp <- unique(bd_impunidad$ano)
 
   
 
-bottom_impunidad <- bd_impunidad %>%
-  filter(nom_indicador == "Índice de impunidad", 
-         ano == ano_sel_imp)  %>%
-  mutate(valor = as.numeric(valor)) %>%
-  slice_max(order_by = valor, n = 1, with_ties = FALSE)  # use slice_min for “menor impunidad”
+# bottom_impunidad <- bd_impunidad %>%
+#   filter(nom_indicador == "Índice de impunidad", 
+#          ano == ano_sel_imp)  %>%
+#   mutate(valor = as.numeric(valor)) %>%
+#   slice_max(order_by = valor, n = 1, with_ties = FALSE)  # use slice_min for “menor impunidad”
 
  
 

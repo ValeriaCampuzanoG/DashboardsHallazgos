@@ -1,0 +1,12 @@
+name: dsbImpunidad
+title: dsbImpunidad
+username: valeriacampuzano-me
+account: valeriacampuzano-me
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 15554597
+bundleId:
+url: https://valeriacampuzano-me.shinyapps.io/dsbImpunidad/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
