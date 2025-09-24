@@ -14,7 +14,8 @@ theme_hgz <- create_theme(
     fuchsia = "#8B3058FF",
     purple = "#541F3FFF",
     maroon = "#D39C83FF",
-    red = "#AD466CFF"
+    red = "#AD466CFF",
+    green = "#C1766FFF"
   ),
   bs4dash_status(
     primary = "#8B3058FF",
@@ -414,6 +415,7 @@ tab_imp2023 <- bd_impunidad %>%
               values_from = "valor") %>%
   select(Ranking, entidad, "Casos totales por resolver",  "Desestimaciones por no ser un delito", 
          "Soluciones efectivas", "Índice de impunidad") %>%
+  arrange(Ranking) %>%
   reactable(striped = T, 
             defaultColDef = colDef( 
               align = "center",
@@ -439,7 +441,7 @@ tab_imp2023 <- bd_impunidad %>%
             outlined = T
   )
 
-tab_imp2019
+tab_imp2023
 
 
 
@@ -459,6 +461,7 @@ fun_gen_tablas_impunidad <- function(bd_impunidad, color_scale) {
       select(entidad, nom_indicador, valor) %>%
       pivot_wider(names_from = "nom_indicador", 
                   values_from = "valor") %>%
+      arrange(Ranking) %>%
       select(Ranking, entidad, "Casos totales por resolver",  "Desestimaciones por no ser un delito", 
              "Soluciones efectivas", "Índice de impunidad") %>%
       reactable(striped = T, 

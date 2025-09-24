@@ -54,6 +54,7 @@ ui <-  dashboardPage(
             title = "Mapa",
             solidHeader = F,
             collapsible = F,
+            maximizable = TRUE,
             selectInput(
               inputId = "anioMapaImpunidad",
               label = "Seleccione un año:",
