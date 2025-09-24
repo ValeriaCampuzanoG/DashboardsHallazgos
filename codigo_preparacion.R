@@ -100,18 +100,18 @@ lista_anos_imp <- unique(bd_impunidad$ano)
 
 # Entidades con más y menos impunidad -------
 
-fun_gen_caja_mayor <- function(ano_sel_imp){
-  
-  top_impunidad <- bd_impunidad %>%
-    filter(nom_indicador == "Índice de impunidad", 
-           ano == ano_sel_imp)  %>%
-    mutate(valor = as.numeric(valor)) %>%
-    slice_max(order_by = valor, n = 1, with_ties = FALSE) 
-  
-  
-  vb_value <- top_impunidad$entidad
-  vb_subtitle <- paste0(top_impunidad$valor, "%")
-}
+# fun_gen_caja_mayor <- function(ano_sel_imp){
+#   
+#   top_impunidad <- bd_impunidad %>%
+#     filter(nom_indicador == "Índice de impunidad", 
+#            ano == ano_sel_imp)  %>%
+#     mutate(valor = as.numeric(valor)) %>%
+#     slice_max(order_by = valor, n = 1, with_ties = FALSE) 
+#   
+#   
+#   vb_value <- top_impunidad$entidad
+#   vb_subtitle <- paste0(top_impunidad$valor, "%")
+# }
 
 
   
