@@ -283,7 +283,7 @@ gen_lineas_imp("índice de impunidad")
 #rev(as.character(colorRampPalette(paletteer::paletteer_c("grDevices::Burg", 30))))
 
 
-data_tab <- bd_impunidad %>%
+tab_imp2023 <- bd_impunidad %>%
   filter(ano == "2023") %>%
   mutate(across(c(valor), as.numeric)) %>%
   select(entidad, nom_indicador, valor) %>%
@@ -316,5 +316,62 @@ data_tab <- bd_impunidad %>%
             outlined = T
   )
 
-data_tab
+tab_imp2019
+
+
+
+# Función generadores de tablas para cada año 
+
+fun_gen_tablas_impunidad <- function(bd_impunidad, color_scale) {
+  years <- c("2019", "2020", "2021", "2022", "2023")
+  
+  for (year in years) {
+    # Create the table for this year
+    table_name <- paste0("tab_imp", year)
+    
+    # Generate the table
+    table_data <- bd_impunidad %>%
+      filter(ano == year) %>%
+      mutate(across(c(valor), as.numeric)) %>%
+      select(entidad, nom_indicador, valor) %>%
+      pivot_wider(names_from = "nom_indicador", 
+                  values_from = "valor") %>%
+      select(Ranking, entidad, "Casos totales por resolver",  "Desestimaciones por no ser un delito", 
+             "Soluciones efectivas", "Índice de impunidad") %>%
+      reactable(striped = T, 
+                defaultColDef = colDef( 
+                  align = "center",
+                  format = colFormat(separators = TRUE)),
+                columns = list( 
+                  Ranking = colDef(filterable = TRUE, format = colFormat(suffix = "°")),
+                  entidad = colDef( name="Entidad", filterable = TRUE, align = "left"),
+                  "Desestimaciones por no ser un delito" = colDef(format = colFormat(separators = TRUE , digits = 0)),
+                  "Índice de impunidad" = colDef(format = colFormat(suffix = "%", 
+                                                                    digits = 1), 
+                                                 style = function(valor) {
+                                                   scaled <- (valor - 85) / (150 - 85)
+                                                   scaled <- max(min(scaled, 1), 0)         
+                                                   color <- color_scale[floor(scaled * 99) + 1]
+                                                   list(
+                                                     background = color,
+                                                     color = ifelse(scaled > 0.13, "white", "black")
+                                                   )
+                                                 })),
+                pagination = F, 
+                compact = T,
+                bordered = T,
+                outlined = T
+      )
+    
+    # Assign to global environment with the desired name
+    # assign(table_name, table_data, envir = .GlobalEnv)
+    # 
+    # cat(paste("Created table:", table_name, "\n"))
+  }
+}
+
+# Usage:
+fun_gen_tablas_impunidad(bd_impunidad, color_scale)
+
+#bs4DashGallery()
 
