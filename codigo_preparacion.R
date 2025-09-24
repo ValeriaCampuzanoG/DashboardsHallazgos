@@ -5,7 +5,25 @@ library(pacman)
 p_load(tidyverse, sf, readxl, ggrepel, DT, plotly, scales, leaflet, reactable, paletteer, fishualize,
        htmltools, bslib, ggrepel)
 p_load(sysfonts, showtext)
+library(fresh)
 
+
+# Cambiar colores 
+theme_hgz <- create_theme(
+  bs4dash_color(
+    fuchsia = "#8B3058FF",
+    purple = "#541F3FFF",
+    maroon = "#D39C83FF",
+    red = "#AD466CFF"
+  ),
+  bs4dash_status(
+    primary = "#8B3058FF",
+    secondary = "#A65461FF",
+    success = "#FBE6C5FF",
+    info = "#7BBCB0FF",
+    warning = "#D39C83FF"
+  )
+)
 
 
 # Cargar la fuente de Google

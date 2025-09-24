@@ -6,9 +6,16 @@ library(plotly)
 library(shinycssloaders)
 library(reactable)
 library(leaflet)
+library(fresh)
+
+
+
 
 # ui
 ui <-  dashboardPage( 
+  
+  freshTheme = theme_hgz, 
+  
   help = NULL, 
   fullscreen = TRUE, 
   scrollToTop = TRUE,
@@ -56,24 +63,10 @@ ui <-  dashboardPage(
             fluidRow(
               column(
                 width = 6, 
-                infoBox(
-                  width = 12,
-                  title = "Entidad con menor impunidad",
-                  value = "Querétaro",
-                  icon = icon("arrow-down"),
-                  color = "fuchsia")
-              ),
-              #bs4ValueBoxOutput("box_impunidad_mas", width = 12),
+                bs4Dash::bs4ValueBoxOutput("box_impunidad_menos", width = 12)),
               column( width = 6, 
-                      bs4ValueBoxOutput("box_impunidad_mas", width = 12))), 
-            #   column( width = 6,
-            #           infoBox(
-            #             width = 12,
-            #             title = "Entidad con mayor impunidad",
-            #             value = "Oaxaca",
-            #             icon = icon("arrow-up"),
-            #             color = "fuchsia"))
-            # ),
+                      bs4Dash::bs4ValueBoxOutput("box_impunidad_mas", width = 12)
+                      )), 
             div(leafletOutput("mapa_impunidad", height = "95vh"), style = "margin-top: 15px;")
           )
         ),
@@ -175,20 +168,18 @@ ui <-  dashboardPage(
 server <- function(input, output, session) {
   
   #Caja de entidad con mayor impunidad
-  output$box_impunidad_mas <- renderValueBox({  # use renderInfoBox if using infoBox
+  output$box_impunidad_mas <- bs4Dash::renderValueBox({  
     top <- bd_impunidad %>%
-      filter(ano == input$anioBarrasImpunidad, nom_indicador == "Índice de impunidad") %>%
+      filter(ano == input$anioBarrasImpunidad,
+             nom_indicador == "Índice de impunidad") %>%
       mutate(valor = as.numeric(valor)) %>%
-      slice_max(order_by = valor, n = 1, with_ties = FALSE)  # use slice_min for “menor impunidad”
-    
-    # Combine fields with paste0 if you want
+      slice_max(order_by = valor, n = 1, with_ties = FALSE) 
+  
     vb_value <- paste0(top$entidad, " ", top$valor, " %" )
-    vb_subtitle <- paste0("Índice: ", sprintf("%.1f%%", top$valor))
     
-    bs4ValueBox(  # use infoBox(...) if you picked infoBoxOutput
-      #title = "",
-      value = vb_value,
-      subtitle = "Entidad con menor impunidad",
+    bs4Dash::bs4ValueBox(  
+      value = tags$span(vb_value, style = "font-size: 2.2rem; font-weight: 700;"),
+      subtitle = "Entidad con mayor impunidad",
       icon = icon("arrow-up"),  # arrow-down if you show “menor impunidad”
       color = "fuchsia",
       width = 12
@@ -196,16 +187,32 @@ server <- function(input, output, session) {
   })
   
   #Caja de entidad con menor impunidad
-  # output$box_impunidad_menos <- renderValueBox({  
-  #   bs4ValueBox(  
-  #     value = vb_value,
-  #     subtitle = vb_subtitle,
-  #     icon = icon("arrow-down"), 
-  #     color = "fuchsia",
-  #     width = 12
-  #   )
-  # })
-  # 
+  output$box_impunidad_menos <- bs4Dash::renderValueBox({
+    req(input$anioBarrasImpunidad)
+    
+    bottom <- bd_impunidad %>%
+      dplyr::mutate(
+        ano = as.character(ano),
+        valor = as.numeric(valor)
+      ) %>%
+      dplyr::filter(
+        ano == as.character(input$anioBarrasImpunidad),
+        nom_indicador == "Índice de impunidad"
+      ) %>%
+      dplyr::slice_min(order_by = valor, n = 1, with_ties = FALSE)
+    
+    req(nrow(bottom) == 1)
+    
+    vb_value <- paste0(bottom$entidad, " ", sprintf("%.1f%%", bottom$valor))
+    
+    bs4Dash::bs4ValueBox(
+      value = tags$span(vb_value, style = "font-size: 2.2rem; font-weight: 700;"),
+      subtitle = "Entidad con menor impunidad",
+      icon = icon("arrow-down"),
+      color = "maroon",
+      width = 12
+    )
+  })
   
   #Tabla de impunidad 2023
   output$tablaImpunidad23 <- renderReactable({
