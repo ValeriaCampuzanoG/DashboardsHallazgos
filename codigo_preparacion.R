@@ -260,7 +260,7 @@ gen_lineas_imp <- function(ind_sel){
     theme_bw() +
     labs(
       x = "Año",
-      y = "Valor",
+      y = "Porcentaje de impunidad",
       color = "Entidad"
     ) +
     scale_y_continuous(labels = comma_format()) +
@@ -274,7 +274,7 @@ gen_lineas_imp <- function(ind_sel){
 }
 
 
-gen_lineas_imp("índice de impunidad")
+gen_lineas_imp("Índice de impunidad")
 
 
 
@@ -282,6 +282,7 @@ gen_lineas_imp("índice de impunidad")
 
 #rev(as.character(colorRampPalette(paletteer::paletteer_c("grDevices::Burg", 30))))
 
+#tabla para 2023
 
 tab_imp2023 <- bd_impunidad %>%
   filter(ano == "2023") %>%

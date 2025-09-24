@@ -114,7 +114,7 @@ ui <-  dashboardPage(
               column(
                 width = 6,
                 h5("Serie 2019-2023", style = "text-align: center; margin-bottom: 10px;"),
-                plotlyOutput("grafica_impunidad_2", height = "60vh") %>% withSpinner()
+                plotlyOutput("grafica_lineas_impunidad", height = "60vh") %>% withSpinner()
               )
             )
           )
@@ -206,6 +206,12 @@ server <- function(input, output, session) {
   output$grafica_barras_impunidad <- renderPlotly({
     gen_barras_imp(ind_sel = input$opcionBarrasImpunidad, 
                    ano_sel_imp = input$anioBarrasImpunidad)
+  })
+  
+  #Gráfica líneas de impunidad 
+  output$grafica_lineas_impunidad <- renderPlotly({
+    gen_lineas_imp(ind_sel = input$opcionBarrasImpunidad)
+    
   })
   
   #Mapa de impunidad
