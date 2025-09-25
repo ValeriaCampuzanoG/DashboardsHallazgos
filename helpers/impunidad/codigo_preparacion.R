@@ -2,6 +2,8 @@ options(scipen = 999)
 options(repos = c(CRAN = "https://cran.r-project.org/"))
 
 
+# IMPUNIDAD #
+
 # Librerias 
 library(tidyverse)
 library(sf)
