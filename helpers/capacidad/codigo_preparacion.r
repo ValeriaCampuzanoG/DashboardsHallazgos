@@ -274,9 +274,9 @@ bd_capacidad %>%
 
 ## Tabla del índice ----
 
-componentes_capacidad <- c("Poder Judicial", "Fiscalía", "Defensoría Pública",  "Órgano de coordinación")
+#componentes_capacidad <- c("Poder Judicial", "Fiscalía", "Defensoría Pública",  "Órgano de coordinación"
 
-
+# TOTAL 
 
 tab_total <- bd_capacidad %>%
   filter(categoria == "Total") %>%
@@ -301,17 +301,25 @@ tab_total <- bd_capacidad %>%
             defaultColDef = colDef( 
               align = "center",
               format = colFormat(separators = TRUE)),
+            rowStyle = function(index) {
+              if (index == 1) {
+                list(
+                  background = "#D39C83FF",
+                  fontWeight = "bold",
+                  color = "black"
+                )
+              }
+            }, 
             columns = list( 
               entidad = colDef( name="Entidad", filterable = TRUE, align = "left"),
               "Índice de Capacidad" = colDef(format = colFormat(suffix = "%"), 
                                              style = function(valor) {
-                                               scaled <- (valor - 0) / (50 - 0)   # rescale between 0 and 50
-                                               scaled <- max(min(scaled, 1), 0)   # clamp between 0 and 1
-                                               color  <- color_scale[floor(scaled * 99) + 1]
-                                               
+                                               scaled <- (valor - 5) / (150)
+                                               scaled <- max(min(scaled, 1), 0)         
+                                               color <- color_scale[floor(scaled * 99) + 1]
                                                list(
                                                  background = color,
-                                                 color = ifelse(scaled > 0.05, "white", "black")
+                                                 color = ifelse(scaled > 0.13, "white", "black")
                                                )
                                              })),
             pagination = F, 
@@ -320,3 +328,227 @@ tab_total <- bd_capacidad %>%
             outlined = T)
 
 tab_total
+
+# FISCALÍA Y COMPONENTES 
+
+tab_fis_cap <- bd_capacidad %>%
+  filter(categoria == "Fiscalía" | nom_indicador == "Fiscalía") %>%
+  select(entidad, nom_indicador, total) %>%
+  mutate(total = round(total*100, 2)) %>%
+  pivot_wider(
+    names_from = nom_indicador,           # Column names will be the state names
+    values_from = total,          # Values will be the totals
+    id_cols = entidad   # Row identifier (indicator names)
+  )  %>%
+  #select(entidad, `Poder Judicial`, `Fiscalía`, `Defensoría Pública`, `Órgano de coordinación`, `Índice de Capacidad`)  %>%
+  bind_rows(
+    tibble( 
+      entidad = "Valores máximos",
+      `Fiscalía` = 35,
+      `Personal suficiente` = 10,
+      `Presupuesto` = 10,
+      `Autonomía constitucional` = 5,
+      `MASC` = 1,
+      `UMECA` = 1,
+      `Justicia para mujeres` = 1,
+      `Justicia para adolescentes` = 1,
+      `Tasa de fiscalías por cada 100,000 hab` = 5 
+      )) %>%
+  arrange(desc(`Fiscalía`)) %>%
+  select( entidad, `Fiscalía`, `Personal suficiente`, `Presupuesto`, `Autonomía constitucional`,  `Tasa de fiscalías por cada 100,000 hab`, everything()) %>%
+  reactable(striped = T, 
+            defaultColDef = colDef( 
+              align = "center",
+              format = colFormat(separators = TRUE)),
+            columns = list( 
+              entidad = colDef( name="Entidad", filterable = TRUE, align = "left"),
+              "Fiscalía" = colDef(format = colFormat(suffix = "%"), 
+                                             name = "Total - Fiscalía",
+                                             style = function(valor) {
+                                               scaled <- (valor - 5) / (70)
+                                               scaled <- max(min(scaled, 1), 0)         
+                                               color <- color_scale[floor(scaled * 99) + 1]
+                                               list(
+                                                 background = color,
+                                                 color = ifelse(scaled > 0.13, "white", "black")
+                                               )
+                                             })),
+            rowStyle = function(index) {
+              if (index == 1) {
+                list(
+                  background = "#D39C83FF",
+                  fontWeight = "bold",
+                  color = "black"
+                )
+              }
+            },
+            pagination = F, 
+            compact = T,
+            bordered = T,
+            outlined = T)
+
+tab_fis_cap
+
+
+
+# PODER JUDICIAL Y COMPONENTES 
+
+tab_pj_cap <- bd_capacidad %>%
+  filter(categoria == "Poder Judicial" | nom_indicador == "Poder Judicial") %>%
+  select(entidad, nom_indicador, total) %>%
+  mutate(total = round(total*100, 2)) %>%
+  pivot_wider(
+    names_from = nom_indicador,           
+    values_from = total,          
+    id_cols = entidad   
+  )  %>%
+  bind_rows(
+    tibble( 
+      entidad = "Valores máximos",
+      `Poder Judicial` = 30,
+      `Personal suficiente` = 10,
+      `Presupuesto` = 10,
+      `Carrera judicial` = 5,
+      `Tasa de salas de audiencia por 100,000 hab` = 5
+    )) %>%
+  arrange(desc(`Poder Judicial`)) %>%
+  select( entidad, `Poder Judicial`, `Personal suficiente`, `Presupuesto`, `Carrera judicial`,  `Tasa de salas de audiencia por 100,000 hab`) %>%
+  reactable(striped = T, 
+            defaultColDef = colDef( 
+              align = "center",
+              format = colFormat(separators = TRUE)),
+            columns = list( 
+              entidad = colDef( name="Entidad", filterable = TRUE, align = "left"),
+              "Poder Judicial" = colDef(format = colFormat(suffix = "%"), 
+                                  name = "Total - PJ",
+                                  style = function(valor) {
+                                    scaled <- (valor - 5) / (70)
+                                    scaled <- max(min(scaled, 1), 0)         
+                                    color <- color_scale[floor(scaled * 99) + 1]
+                                    list(
+                                      background = color,
+                                      color = ifelse(scaled > 0.13, "white", "black")
+                                    )
+                                  })),
+            rowStyle = function(index) {
+              if (index == 1) {
+                list(
+                  background = "#D39C83FF",
+                  fontWeight = "bold",
+                  color = "black"
+                )
+              }
+            },
+            pagination = F, 
+            compact = T,
+            bordered = T,
+            outlined = T)
+
+tab_pj_cap
+
+
+# DEFENSORÍA Y COMPONENTES 
+
+tab_def_cap <- bd_capacidad %>%
+  filter(categoria == "Defensoría Pública" | nom_indicador == "Defensoría Pública") %>%
+  select(entidad, nom_indicador, total) %>%
+  mutate(total = round(total*100, 2)) %>%
+  pivot_wider(
+    names_from = nom_indicador,           
+    values_from = total,          
+    id_cols = entidad   
+  )  %>%
+  bind_rows(
+    tibble( 
+      entidad = "Valores máximos",
+      `Defensoría Pública` = 20,
+      `Personal suficiente` = 10,
+      `Presupuesto` = 10
+    )) %>%
+  arrange(desc(`Defensoría Pública`), entidad) %>%
+  #select( entidad, `Poder Judicial`, `Personal suficiente`, `Presupuesto`, `Carrera judicial`,  `Tasa de salas de audiencia por 100,000 hab`) %>%
+  reactable(striped = T, 
+            defaultColDef = colDef( 
+              align = "center",
+              format = colFormat(separators = TRUE)),
+            columns = list( 
+              entidad = colDef( name="Entidad", filterable = TRUE, align = "left"),
+              "Defensoría Pública" = colDef(format = colFormat(suffix = "%"), 
+                                        name = "Total - DP",
+                                        style = function(valor) {
+                                          scaled <- (valor - 4) / (20)
+                                          scaled <- max(min(scaled, 1), 0)         
+                                          color <- color_scale[floor(scaled * 99) + 1]
+                                          list(
+                                            background = color,
+                                            color = ifelse(scaled > 0.13, "white", "black")
+                                          )
+                                        })),
+            rowStyle = function(index) {
+              if (index == 1) {
+                list(
+                  background = "#D39C83FF",
+                  fontWeight = "bold",
+                  color = "black"
+                )
+              }
+            },
+            pagination = F, 
+            compact = T,
+            bordered = T,
+            outlined = T)
+
+tab_def_cap
+
+
+# ÓRGANO Y COMPONENTES 
+
+tab_org_cap <- bd_capacidad %>%
+  filter(categoria == "Órgano de coordinación" | nom_indicador == "Órgano de coordinación") %>%
+  select(entidad, nom_indicador, total) %>%
+  mutate(total = round(total*100, 2)) %>%
+  pivot_wider(
+    names_from = nom_indicador,           
+    values_from = total,          
+    id_cols = entidad   
+  )  %>%
+  bind_rows(
+    tibble( 
+      entidad = "Valores máximos",
+      `Órgano de coordinación` = 15,
+      `Institución consolidada` = 10
+    )) %>%
+  arrange(desc(`Órgano de coordinación`), entidad) %>%
+  #select( entidad, `Poder Judicial`, `Personal suficiente`, `Presupuesto`, `Carrera judicial`,  `Tasa de salas de audiencia por 100,000 hab`) %>%
+  reactable(striped = T, 
+            defaultColDef = colDef( 
+              align = "center",
+              format = colFormat(separators = TRUE)),
+            columns = list( 
+              entidad = colDef( name="Entidad", filterable = TRUE, align = "left"),
+              "Defensoría Pública" = colDef(format = colFormat(suffix = "%"), 
+                                            name = "Total - DP",
+                                            style = function(valor) {
+                                              scaled <- (valor - 4) / (20)
+                                              scaled <- max(min(scaled, 1), 0)         
+                                              color <- color_scale[floor(scaled * 99) + 1]
+                                              list(
+                                                background = color,
+                                                color = ifelse(scaled > 0.13, "white", "black")
+                                              )
+                                            })),
+            rowStyle = function(index) {
+              if (index == 1) {
+                list(
+                  background = "#D39C83FF",
+                  fontWeight = "bold",
+                  color = "black"
+                )
+              }
+            },
+            pagination = F, 
+            compact = T,
+            bordered = T,
+            outlined = T)
+
+tab_def_cap
