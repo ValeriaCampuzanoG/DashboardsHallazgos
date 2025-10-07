@@ -1,10 +1,10 @@
 options(scipen = 999)
-options(repos = c(CRAN = "https://cran.r-project.org/"))
+#options(repos = c(CRAN = "https://cran.r-project.org/"))
 
 
 # CAPACIDAD #
 
-install.packages("ggiraph")
+#install.packages("janitor")
 
 # Librerias 
 library(tidyverse)
@@ -25,6 +25,8 @@ library(sysfonts)
 library(showtext)
 library(ggplot2)
 library(ggiraph)
+library(paletteer)
+paletteer::palettes_c_names
 
 
 theme_hgz <- create_theme(
@@ -45,9 +47,88 @@ theme_hgz <- create_theme(
 )
 
 
+theme_1<-theme_bw()+
+  theme(text=element_text(family = "Montserrat"),
+        plot.title = element_text( #family = gt::google_font("Montserrat"),
+                                  # face = "bold",
+                                  size = 25,
+                                  hjust = 0),
+        plot.subtitle = element_text( #family = gt::google_font("Montserrat"),
+                                     size = 20,
+                                     hjust = 0,
+                                     colour = "grey40"),
+        plot.caption = element_text( #family = gt::google_font("Montserrat"),
+                                    size = 18,
+                                    colour = "grey40",
+                                    hjust=c(1)),
+        # axis.text.x = element_text( #family = gt::google_font("Montserrat"),
+        #                            # face = "bold",
+        #                            size = 12,
+        #                            colour = "black"),
+        # axis.text.y = element_text( #family = gt::google_font("Montserrat"),
+        #                            # face = "bold",
+        #                            size = 10,
+        #                            colour = "black"),
+        legend.title = element_text( #family = gt::google_font("Montserrat"),
+                                    face = "bold",
+                                    size = 12,
+                                    colour = "black",
+                                    hjust = .0),
+        legend.title.align = 0,
+        legend.text = element_text( #family = gt::google_font("Montserrat"),
+                                   # face = "bold",
+                                   size = 12,
+                                   colour = "black",
+                                   hjust = 0),
+        legend.text.align = 0,
+        legend.position="bottom",
+        legend.key.size = unit(19, "pt"))
+
+
+# Paleta de colores
+
+color_scale <- rev(as.character(
+  paletteer::paletteer_c("grDevices::Burg", 30)
+))
+
+# Transformación de datos 
+
+bd_capacidad_wide <- read_excel("www/bd/bd_capacidad_wide.xlsx", 
+                                sheet = "Base de datos agregada ") #base de datos ancha, descargada del excel 
+
+bd_capacidad <- bd_capacidad_wide %>% janitor::row_to_names(row_number = 3) %>%
+  select(-cve) %>%
+  pivot_longer( 
+    cols = ranking:fi_tasa_agencias, 
+    names_to = "variable", 
+    values_to = "total"
+    )
+
+
+df <- bd_capacidad_wide %>%
+  slice(1:3) %>%
+  select(-2) 
+
+df <- t(df)
+metadatos_cap <- as.data.frame(df)
+
+metadatos_cap <- metadatos_cap %>%
+  slice(-1) %>%
+  rename(
+     "nom_indicador" = V1, 
+     "categoria" = V2, 
+     "variable" = V3
+  )
+
+
+bd_capacidad <- bd_capacidad %>%
+  left_join(metadatos_cap, by = "variable") %>%
+  select(entidad, nom_indicador, categoria, total) %>%
+  filter(!(entidad %in% c("valor máximo")))
+
 # Importar datos
 
-bd_capacidad <- read_excel("www/bd/bd_indice_capacidad.xlsx")
+#bd_capacidad_old <- read_excel("www/bd/bd_indice_capacidad.xlsx")
 catalogo_estatal <- read_excel("www/bd/catalogo_estatal.xlsx")
 shp <- read_sf("www/DivisionEstatal.geojson")
 valores_max_capacidad <- read_excel("www/bd/metadatos_valores_icapacidad.xlsx")
@@ -55,8 +136,13 @@ valores_max_capacidad <- read_excel("www/bd/metadatos_valores_icapacidad.xlsx")
 
 bd_capacidad <- bd_capacidad %>%
   left_join(catalogo_estatal, by="entidad") %>%
-  mutate(cve_ent = ifelse(is.na(cve_ent), 15, cve_ent) )
+  mutate(cve_ent = ifelse(is.na(cve_ent), 15, cve_ent), 
+         total = as.numeric(total))
+  
 
+
+# 
+opciones_capacidad <- c("Fiscalía", "Poder Judicial", "Defensoría Pública", "Órgano de coordinación")
 
 
 ## Mapa leaflet ----
@@ -66,10 +152,10 @@ datos_sel_capacidad <- bd_capacidad %>%
 
 mapcap <- left_join(shp, datos_sel_capacidad, by = c("CVE_EDO" = "cve_ent"))  
 
-mapcap$ranking <- rank(-mapcap$total, ties.method = "first")
+mapcap$ranking <- rank( (-mapcap$total), ties.method = "first")
 
 label_cap <- paste0(
-  "<b style='font-size:25px;'>", mapcap$ranking, "/32</b><br>",
+  "<b style='font-size:20px;'>", mapcap$ranking, "/32</b><br>",
   "<b style='font-size:20px;'><span style='color:#9e3963;'>", mapcap$entidad, "</span> </b><br>",
   "<span style='font-size:32px;'>",round(mapcap$total*100, 2), "%</span>")
 
@@ -79,7 +165,12 @@ paleta_cap <- colorNumeric(palette = color_scale,
 
 #pasos para un leaflet  
 mapa_base_capacidad <-  
-  leaflet(mapcap) %>%  
+  leaflet(mapcap,
+          options = leafletOptions(
+    minZoom = 5.4,
+    #maxZoom = 5.4,
+    zoomControl = FALSE
+  )) %>%  
   addProviderTiles("CartoDB.DarkMatter") %>%  
   addPolygons(color = "white", 
               fillColor = paleta_cap(mapcap$total), 
@@ -109,28 +200,32 @@ g <-
      mutate(total = as.numeric(total),
             cve_ent=as.character(cve_ent)) %>%
   ggplot(aes(x = reorder(entidad, total),
-                          y = total*100, 
-                          tooltip = paste0("<b>", entidad, "</b><br>",
-                                           "Índice: ", round(total*100, 2), "%"),
-                          data_id = entidad)) +
-  ggiraph::geom_segment_interactive(aes(x = reorder(entidad, total), xend = reorder(entidad, total),
-                               y = 0, yend = total*100),
-                           color = "#D39C83FF", linewidth = 1.0) +
-  ggiraph::geom_point_interactive(color = "#541F3FFF", size = 4, alpha = 0.8) +
+             y = total*100, 
+             fill = total*100, 
+             tooltip = paste0("<b>", entidad, "</b><br>",
+                              "Índice: ", round(total*100, 2), "%"),
+             data_id = entidad)) +
+  ggiraph::geom_col_interactive() +
   geom_text(aes(label = paste0(round(total*100, 2), "%")), hjust = -0.5, colour = "#535353") +
+  scale_fill_gradient(low = "#D39C83", high = "#813753") +
   labs(
     title = "Índice de Capacidad, 2023",
     x = "Entidad",
-    y = ""
+    y = "", 
+    caption = "Elaboración propia con base en el Censo de Procuración de Justicia Estatal 2024, Censo de Impartición de Justicia Estatal 2024, Censos de Gobiernos Estatles 2024, Proyecciones de población de CONAPO."
   ) +
   theme_bw() +
+  #theme_1 + 
   theme(
     axis.title = element_text(family = "Montserrat", size = 9),
     plot.subtitle = element_text(family = "Montserrat", size = 7, colour = "#636363"),
+    #plot.caption  = element_text(family = "Montserrat", size = 7, colour = "#636363", 
+                                # margin = margin(b = 30, unit = "pt")),
     plot.title = element_text(family = "Montserrat",
                               face = "bold",
                               size = 35,
                               hjust = 0,
+                              #vjust = 5, 
                               margin = margin(b = 30, unit = "pt")),
     #plot.title.position = "plot",
     panel.grid.major.x = element_blank(),
@@ -138,9 +233,9 @@ g <-
     panel.grid = element_blank(),
     panel.border = element_blank(),
     axis.line = element_line(),
-    legend.position = "bottom",
-    axis.ticks.length = unit(0.2, "cm"),
-    plot.margin = margin(60, 20, 20, 20, "pt")
+    legend.position = "none",
+    axis.ticks.length = unit(0.2, "cm") #,
+    #plot.margin = margin(60, 20, 20, 20, "pt")
   ) +
   scale_x_discrete(expand = c(0, 0)) +
   scale_y_discrete(labels = function(x) paste0(x, "%")) +
@@ -149,7 +244,7 @@ g <-
 
 
 g_capacidad <- ggiraph::girafe(ggobj = g, 
-                               width_svg = 12,    
+                               width_svg = 14,    
                                height_svg = 10,    
                                pointsize = 12,
                                options = list(opts_tooltip(css = "background-color:#d9d9d9;color:black;padding:5px;border-radius:3px;opacity:0.9"),
@@ -164,58 +259,115 @@ g_capacidad
 ## Gráfica de barras por institucion -------
 
 
-opciones_capacidad<- c("Poder Judicial", "Fiscalía", "Defensoría Pública", "Órgano de coordinación")
-
-
-
-gen_barras_cap_inst <- function(ind_sel4){
+gen_barras_cap_inst <- function(ind_sel){
+  
   
   datos_sel <- bd_capacidad %>%
-    filter(nom_indicador %in% opciones_capacidad) %>%
-    filter(nom_indicador == ind_sel4) %>%
-    left_join(valores_max_capacidad, by= "nom_indicador")
-  
-  
-  g <- datos_sel %>% 
-    ggplot(aes(x = reorder(entidad, total), 
-               y = total*100, 
-               fill = total*100, 
-               text = paste0( "<span style='font-size:24px;'><b>", entidad, "</b></span><br><br>",
-                              "<span style='font-size:18px;'>", prettyNum(round(total*100, 2), big.mark = ","), "/", valor_maximo
-               )
-    )) + 
-    geom_col() + 
-    coord_flip() +
-    scale_fill_gradientn(colors = color_scale) + 
-    theme_bw() + 
-    labs(title = paste0("Puntuación de " , unique(datos_sel$nom_indicador), " por entidad") , 
-         x = NULL, 
-         y = NULL,) + 
-    scale_y_continuous(expand = expansion(c(0, 0.1)), 
-                       labels = comma_format()) + 
-    theme(
-      panel.grid = element_blank(), 
-      panel.border = element_blank(), 
-      axis.line = element_line(), 
-      legend.position = "none"
-    ) +
-    geom_text(aes(label = round(total*100, 2)), hjust = -0.5, colour = "#535353") +
-    guides(fill = "none")
-  
-  ggplotly(g, tooltip = "text") 
-  
+    filter(
+      categoria == "Total", 
+      nom_indicador== ind_sel ) %>%
+    mutate(total = as.numeric(total),
+           cve_ent=as.character(cve_ent))
+
+g <- datos_sel %>%
+  ggplot(aes(x = reorder(entidad, total),
+             y = total*100, 
+             fill = total*100, 
+             tooltip = paste0("<b>", entidad, "</b><br>",
+                              "Puntaje: ", round(total*100, 2), "%"),
+             data_id = entidad)) +
+  ggiraph::geom_col_interactive() +
+  scale_fill_gradient(low = "#D39C83", high = "#813753") +
+  geom_text(aes(label = paste0(round(total*100, 2), "%")), hjust = -0.5, colour = "#535353") +
+  labs(
+    title = paste0(
+      "Puntuación ",
+      ifelse(ind_sel %in% c("Fiscalía", "Defensoría Pública"), "de la ", "del "),
+      ind_sel), 
+    subtitle = "Índice de capacidad, 2023",
+    x = "Entidad",
+    y = ""
+  ) +
+  geom_hline( 
+    yintercept = case_when(
+    ind_sel == "Fiscalía" ~ 35,
+    ind_sel == "Poder Judicial" ~ 30,
+    ind_sel == "Defensoría Pública" ~ 20,
+    ind_sel == "Órgano de coordinación" ~ 15,
+    TRUE ~ NA_real_
+  ),
+  color = "black", 
+             linetype="dotted", 
+             linewidth =1) +
+  annotate(
+    "label", 
+    x = 12, y = case_when(
+      ind_sel == "Fiscalía" ~ 35,
+      ind_sel == "Poder Judicial" ~ 30,
+      ind_sel == "Defensoría Pública" ~ 20,
+      ind_sel == "Órgano de coordinación" ~ 15,
+      TRUE ~ NA_real_
+    ),         # colocar al final de la línea
+    label = "Puntaje máximo",
+    hjust = .5, vjust = -10, # ajuste fino posición
+    size = 5,                  # tamaño del texto
+    fill = "#672044FF",           # fondo de la etiqueta (opcional)
+    color = "white",           # color del texto
+    fontface = "bold"
+  ) +
+  theme_bw() +
+  theme(
+    axis.title = element_text(family = "Montserrat", size = 9),
+    plot.subtitle = element_text(family = "Montserrat", 
+                                 size = 25, 
+                                 colour = "#636363",
+                                 margin = margin(b = 30, unit = "pt")),
+    plot.title = element_text(family = "Montserrat",
+                              face = "bold",
+                              size = 35,
+                              hjust = 0,
+                              margin = margin(b = 10, unit = "pt")),
+    #plot.title.position = "plot",
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.grid = element_blank(),
+    panel.border = element_blank(),
+    axis.line = element_line(),
+    legend.position = "none" #,
+    #axis.ticks.length = unit(0.2, "cm")
+    #plot.margin = margin(60, 20, 20, 20, "pt")
+  ) +
+  #scale_x_discrete(expand = c(0, 0)) +
+  scale_y_discrete(labels = function(x) paste0(x, "%")) +
+  coord_flip() +
+  ylim(0, 40) 
+
+
+g_capacidad_institucion <- ggiraph::girafe(ggobj = g, 
+                               width_svg = 16,    
+                               height_svg = 12,    
+                               pointsize = 12,
+                               options = list(opts_tooltip(css = "background-color:#d9d9d9;color:black;padding:5px;border-radius:3px;opacity:0.9"),
+                                              opts_hover(css = ''),
+                                              opts_hover_inv(css = "opacity:0.1;"),
+                                              opts_selection(type = "none"),
+                                              opts_toolbar(saveaspng = FALSE)))
+
+
+g_capacidad_institucion
 }
 
 
-gen_barras_cap_inst(ind_sel4 = "Fiscalía")
+
+gen_barras_cap_inst(ind_sel = "Defensoría Pública")
 
 
 
 ## Gráfica de barras por estado -------
 
-# Estática: índice de capacidad general
+# Procesamiento de la base para limpiar columnas 
 
-bd_capacidad %>%
+bd_sel_capacidad <- bd_capacidad %>%
   mutate(
     nom_indicador_2 = case_when(
       categoria == "Total" ~ categoria, 
@@ -226,51 +378,295 @@ bd_capacidad %>%
   ) %>%
   select(entidad, cve_ent, nom_indicador_2, institucion, total) %>%
   left_join(valores_max_capacidad,  by = c("institucion"= "nom_indicador")) %>%
-  filter(!(institucion %in% c("Ranking", "Índice de Capacidad"))) %>%
-  mutate(titulo = paste0(institucion, " (", valor_maximo , "%)")) %>%
-  filter(entidad == "Colima") %>%
-  # arrange(desc(nom_indicador_2 == "Total"), total) %>%  
-  # mutate(nom_indicador_2 = factor(nom_indicador_2, levels = unique(nom_indicador_2))) %>%
-  ggplot(aes(x = reorder(stringr::str_wrap(nom_indicador_2, 20), total*100), y = total*100, fill = institucion)) +
-  geom_col(aes(alpha = ifelse(nom_indicador_2 == "Total", 1, 0.8))) +
-  geom_text(aes(label = paste0(round(total*100, 2), "%")), hjust = -0.5, colour = "#535353") +
-  coord_flip() +
-  theme_bw() +
-  facet_wrap(~titulo, scales = "free") +
-  scale_y_continuous(expand = expansion(mult = c(0, 0.1))) +
-  scale_x_discrete(labels = c("Total" = expression(bold(Total))))  +
-  scale_alpha_identity() +
-  scale_fill_manual(values = c(
-    "Poder Judicial" = "#70284AFF",    # Replace with your actual institutions
-    "Fiscalía" = "#DC7176FF",    
-    "Defensoría Pública" = "#D39C83FF",    
-    "Órgano de coordinación" = "#541F3FFF"  
-  )) +
-  labs(
-    title = paste0("Índice de impunidad, Colima"),
-    subtitle = "Componentes",
-    x = NULL,   
-    y = NULL, 
-    fill = NULL
-  ) +
-  theme(
-    axis.text.x = element_text(family = gt::google_font("Montserrat"), angle = 0, hjust = 1, size = 10),
-    #axis.text.y = element_text(family = gt::google_font("Montserrat")),
-    axis.title = element_text(family = gt::google_font("Montserrat"), size = 9),
-    plot.subtitle = element_text(family = gt::google_font("Montserrat"), size = 18,   face = "bold",colour = "#636363"),
-    panel.grid.major.x = element_blank(),
-    panel.grid.minor = element_blank(),
-    panel.grid = element_blank(),
-    panel.border = element_blank(),
-    axis.line = element_line(),
-    plot.title = element_text(family = gt::google_font("Montserrat"),
-                              face = "bold",
-                              size = 25,
-                              hjust = 0),
-    legend.position = "none"
-  ) +
-  guides(alpha = "none")
+  #filter(!(institucion %in% c("Ranking", "Índice de Capacidad"))) %>%
+  mutate(titulo = paste0(institucion, " (", valor_maximo , "%)"))
 
+
+
+# Función para el texto del box 
+gen_texto_capacidad_entidad <- function(ent_sel) {
+  
+  datos_sel <- bd_sel_capacidad %>%
+    filter(entidad == ent_sel)
+  
+  
+  # Valores para boxes
+  
+  ranking <- datos_sel %>%
+    filter( institucion == "Ranking") %>%
+    select(entidad, institucion, total) 
+  
+  indice <- datos_sel %>%
+    filter( institucion == "Índice de Capacidad") %>%
+    select(entidad, institucion, total) %>%
+    mutate(total = round(total*100, 2))
+  
+  bx_valores <- paste0(indice$total, "%  |  ", ranking$total, "/32" )
+  #bx_entidad <- paste0(indice$entidad)
+  return(bx_valores)
+  #return(bx_entidad)
+  
+  
+}
+
+gen_texto_capacidad_entidad("Ciudad de México")
+
+
+
+
+
+#Función para hacer las 4 gráficas
+
+gen_grafica_capacidad_entidad <- function(ent_sel) {
+
+
+  datos_sel <- bd_sel_capacidad %>%
+    filter(entidad == ent_sel)
+  
+#Poder Judicial 
+  
+ g_4 <- datos_sel %>%
+   filter(institucion == "Poder Judicial") %>%
+   ggplot(aes(
+     x = reorder(stringr::str_wrap(nom_indicador_2, 20), total*100), 
+     y = total*100,
+     fill = ifelse(nom_indicador_2 == "Total", "#813753FF", "#D39C83FF"),
+     tooltip = paste0("<b>", nom_indicador_2, "</b><br>",
+                      "Puntuación: ", round(total*100, 2), "%"),
+     data_id = nom_indicador_2)) +
+   ggiraph::geom_col_interactive(aes(alpha = ifelse(nom_indicador_2 == "Total", 1, 0.8))) +
+   geom_text(aes(label = paste0(round(total*100, 2), "%")), hjust = -0.5, colour = "#535353") +
+   coord_flip() +
+   theme_bw() +
+   scale_y_continuous(expand = expansion(mult = c(0, 0.1))) +
+   scale_x_discrete(labels = c("Total" = expression(bold(Total)))) +
+   scale_fill_identity() +
+   scale_alpha_identity() +
+   labs(
+     subtitle = "Poder Judicial (30%)", 
+     x = "Componente", 
+     y = "Puntuación en porcentaje"
+   ) +
+   geom_hline( 
+     yintercept = 30,
+     color = "black", 
+     linetype="dotted", 
+     linewidth =1) +
+   theme(
+     axis.text.x = element_text(family = "Montserrat", angle = 0, hjust = 1, size = 10),
+     axis.title = element_text(family = "Montserrat", size = 9),
+     plot.subtitle = element_text(family = "Montserrat", size = 18, face = "bold", colour = "#636363", margin = margin(b = 30, unit = "pt")),
+     panel.grid.major.x = element_blank(),
+     panel.grid.minor = element_blank(),
+     panel.grid = element_blank(),
+     panel.border = element_blank(),
+     axis.line = element_line(),
+     plot.title = element_text(family = "Montserrat",
+                               face = "bold",
+                               size = 25,
+                               hjust = 0),
+     legend.position = "none"
+   )+
+   ylim(0,35)
+ 
+g_pj <- ggiraph::girafe(
+   ggobj = g_4,
+    width_svg = 10,
+    height_svg = 9,
+   options = list(opts_tooltip(css = "background-color:#d9d9d9;color:black;padding:5px;border-radius:3px;opacity:0.9"),
+                  opts_hover(css = ''),
+                  opts_hover_inv(css = "opacity:0.1;"),
+                  opts_selection(type = "none"),
+                  opts_toolbar(saveaspng = FALSE))
+ )
+   
+  
+
+# Gráfica de Fiscalía 
+ 
+ 
+ g_1 <- datos_sel %>%
+   filter(institucion == "Fiscalía") %>%
+   ggplot(aes(
+     x = reorder(stringr::str_wrap(nom_indicador_2, 20), total*100), 
+     y = total*100,
+     fill = ifelse(nom_indicador_2 == "Total", "#813753FF", "#D39C83FF"),
+     tooltip = paste0("<b>", nom_indicador_2, "</b><br>",
+                      "Puntuación: ", round(total*100, 2), "%"),
+     data_id = nom_indicador_2)) +
+   ggiraph::geom_col_interactive(aes(alpha = ifelse(nom_indicador_2 == "Total", 1, 0.8))) +
+   geom_text(aes(label = paste0(round(total*100, 2), "%")), hjust = -0.5, colour = "#535353") +
+   coord_flip() +
+   theme_bw() +
+   scale_y_continuous(expand = expansion(mult = c(0, 0.1))) +
+   scale_x_discrete(labels = c("Total" = expression(bold(Total)))) +
+   scale_fill_identity() +
+   scale_alpha_identity() +
+   labs(
+     subtitle = "Fiscalía (35%)", 
+     x = "Componente", 
+     y = "Puntuación en porcentaje"
+   ) +
+   geom_hline( 
+     yintercept = 35,
+     color = "black", 
+     linetype="dotted", 
+     linewidth =1) +
+   theme(
+     axis.text.x = element_text(family = "Montserrat", angle = 0, hjust = 1, size = 10),
+     axis.title = element_text(family = "Montserrat", size = 9),
+     plot.subtitle = element_text(family = "Montserrat", size = 18, face = "bold", colour = "#636363", margin = margin(b = 30, unit = "pt")),
+     panel.grid.major.x = element_blank(),
+     panel.grid.minor = element_blank(),
+     panel.grid = element_blank(),
+     panel.border = element_blank(),
+     axis.line = element_line(),
+     plot.title = element_text(family = "Montserrat",
+                               face = "bold",
+                               size = 25,
+                               hjust = 0),
+     legend.position = "none"
+   ) +
+   ylim(0,40)
+ 
+ g_fi <- ggiraph::girafe(
+   ggobj = g_1,
+   width_svg = 10,
+   height_svg = 9,
+   options = list(opts_tooltip(css = "background-color:#d9d9d9;color:black;padding:5px;border-radius:3px;opacity:0.9"),
+                  opts_hover(css = ''),
+                  opts_hover_inv(css = "opacity:0.1;"),
+                  opts_selection(type = "none"),
+                  opts_toolbar(saveaspng = FALSE)))
+ 
+ 
+ # Gráfica de Defensoría Pública 
+ 
+ g_2 <- datos_sel %>%
+   filter(institucion == "Defensoría Pública") %>%
+   ggplot(aes(
+     x = reorder(stringr::str_wrap(nom_indicador_2, 20), total*100), 
+     y = total*100,
+     fill = ifelse(nom_indicador_2 == "Total", "#813753FF", "#D39C83FF"),
+     tooltip = paste0("<b>", nom_indicador_2, "</b><br>",
+                      "Puntuación: ", round(total*100, 2), "%"),
+     data_id = nom_indicador_2)) +
+   ggiraph::geom_col_interactive(aes(alpha = ifelse(nom_indicador_2 == "Total", 1, 0.8))) +
+   geom_text(aes(label = paste0(round(total*100, 2), "%")), hjust = -0.5, colour = "#535353") +
+   coord_flip() +
+   theme_bw() +
+   scale_y_continuous(expand = expansion(mult = c(0, 0.1))) +
+   scale_x_discrete(labels = c("Total" = expression(bold(Total)))) +
+   scale_fill_identity() +
+   scale_alpha_identity() +
+   labs(
+     subtitle = "Defensoría pública (20%)", 
+     x = "Componente", 
+     y = "Puntuación en porcentaje"
+   ) +
+   geom_hline( 
+     yintercept = 20,
+     color = "black", 
+     linetype="dotted", 
+     linewidth =1) +
+   theme(
+     axis.text.x = element_text(family = "Montserrat", angle = 0, hjust = 1, size = 10),
+     axis.title = element_text(family = "Montserrat", size = 9),
+     plot.subtitle = element_text(family = "Montserrat", size = 18, face = "bold", colour = "#636363", margin = margin(b = 30, unit = "pt")),
+     panel.grid.major.x = element_blank(),
+     panel.grid.minor = element_blank(),
+     panel.grid = element_blank(),
+     panel.border = element_blank(),
+     axis.line = element_line(),
+     plot.title = element_text(family = "Montserrat",
+                               face = "bold",
+                               size = 25,
+                               hjust = 0),
+     legend.position = "none"
+   ) +
+   ylim(0,25)
+ 
+ g_dp <- ggiraph::girafe(
+   ggobj = g_2,
+   width_svg = 10,
+   height_svg = 9,
+   options = list(opts_tooltip(css = "background-color:#d9d9d9;color:black;padding:5px;border-radius:3px;opacity:0.9"),
+                  opts_hover(css = ''),
+                  opts_hover_inv(css = "opacity:0.1;"),
+                  opts_selection(type = "none"),
+                  opts_toolbar(saveaspng = FALSE)))
+ 
+ 
+ 
+# Gráfica de Órgano de coordinación 
+ 
+ 
+ g_3 <- datos_sel %>%
+   filter(institucion == "Órgano de coordinación") %>%
+   ggplot(aes(
+     x = reorder(stringr::str_wrap(nom_indicador_2, 20), total*100), 
+     y = total*100,
+     fill = ifelse(nom_indicador_2 == "Total", "#813753FF", "#D39C83FF"),
+     tooltip = paste0("<b>", nom_indicador_2, "</b><br>",
+                      "Puntuación: ", round(total*100, 2), "%"),
+     data_id = nom_indicador_2)) +
+   ggiraph::geom_col_interactive(aes(alpha = ifelse(nom_indicador_2 == "Total", 1, 0.8))) +
+   geom_text(aes(label = paste0(round(total*100, 2), "%")), hjust = -0.5, colour = "#535353") +
+   coord_flip() +
+   theme_bw() +
+   scale_y_continuous(expand = expansion(mult = c(0, 0.1))) +
+   scale_x_discrete(labels = c("Total" = expression(bold(Total)))) +
+   scale_fill_identity() +
+   scale_alpha_identity() +
+   labs(
+     subtitle = "Órgano de coordinación (15%)", 
+     x = "Componente", 
+     y = "Puntuación en porcentaje"
+   ) +
+   geom_hline( 
+     yintercept = 15,
+     color = "black", 
+     linetype="dotted", 
+     linewidth =1) +
+   theme(
+     axis.text.x = element_text(family = "Montserrat", angle = 0, hjust = 1, size = 10),
+     axis.title = element_text(family = "Montserrat", size = 9),
+     plot.subtitle = element_text(family = "Montserrat", size = 18, face = "bold", colour = "#636363", margin = margin(b = 30, unit = "pt")),
+     panel.grid.major.x = element_blank(),
+     panel.grid.minor = element_blank(),
+     panel.grid = element_blank(),
+     panel.border = element_blank(),
+     axis.line = element_line(),
+     plot.title = element_text(family = "Montserrat",
+                               face = "bold",
+                               size = 25,
+                               hjust = 0),
+     legend.position = "none"
+   ) +
+   ylim(0,20)
+ 
+ g_oc <- ggiraph::girafe(
+   ggobj = g_3,
+   width_svg = 10,
+   height_svg = 9,
+   options = list(opts_tooltip(css = "background-color:#d9d9d9;color:black;padding:5px;border-radius:3px;opacity:0.9"),
+                  opts_hover(css = ''),
+                  opts_hover_inv(css = "opacity:0.1;"),
+                  opts_selection(type = "none"),
+                  opts_toolbar(saveaspng = FALSE)))
+ 
+ list(
+   grafica_pj = g_pj,
+   grafica_fi = g_fi,
+   grafica_dp = g_dp,
+   grafica_oc = g_oc
+ )
+
+}
+
+
+
+gen_grafica_capacidad_entidad("Baja California Sur")
 
 ## Tabla del índice ----
 
@@ -551,4 +947,4 @@ tab_org_cap <- bd_capacidad %>%
             bordered = T,
             outlined = T)
 
-tab_def_cap
+tab_org_cap

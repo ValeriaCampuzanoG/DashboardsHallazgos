@@ -1,6 +1,6 @@
 #Librerías 
 
-install.packages("renv")
+#install.packages("renv")
 
 library(shiny)
 library(bs4Dash)
@@ -12,7 +12,7 @@ library(fresh)
 
 #source(file = "paquetes-setup.R")
 source(file = "importacion_textos.R")
-source(file = "codigo_preparacion.R")
+source(file = "helpers/impunidad/codigo_preparacion.R")
 
 
 # ui

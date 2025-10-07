@@ -1,0 +1,519 @@
+options(scipen = 999)
+options(repos = c(CRAN = "https://cran.r-project.org/"))
+
+
+# IMPUNIDAD #
+
+# Librerias 
+library(tidyverse)
+library(sf)
+library(readxl)
+library(ggrepel)
+library(DT)
+library(plotly)
+library(scales)
+library(leaflet)
+library(reactable)
+library(paletteer)
+library(fishualize)
+library(htmltools)
+library(bslib)
+library(fresh)
+library(sysfonts)
+library(showtext)
+
+
+# Cambiar colores 
+theme_hgz <- create_theme(
+  bs4dash_color(
+    fuchsia = "#8B3058FF",
+    purple = "#541F3FFF",
+    maroon = "#D39C83FF",
+    red = "#AD466CFF",
+    green = "#C1766FFF"
+  ),
+  bs4dash_status(
+    primary = "#8B3058FF",
+    secondary = "#A65461FF",
+    success = "#FBE6C5FF",
+    info = "#7BBCB0FF",
+    warning = "#D39C83FF"
+  )
+)
+
+
+# Cargar la fuente de Google
+# font_add_google("Montserrat", "Montserrat")
+# showtext_auto()
+# 
+# 
+# theme_1<-theme_minimal()+
+#   theme(text=element_text(family = gt::google_font("Montserrat")),
+#         plot.title = element_text(family = gt::google_font("Montserrat"),
+#                                   # face = "bold",
+#                                   size = 25,
+#                                   hjust = 0),
+#         plot.subtitle = element_text(family = gt::google_font("Montserrat"),
+#                                      size = 20,
+#                                      hjust = 0,
+#                                      colour = "grey40"),
+#         plot.caption = element_text(family = gt::google_font("Montserrat"),
+#                                     size = 18,
+#                                     colour = "grey40",
+#                                     hjust=c(1)),
+#         axis.text.x = element_text(family = gt::google_font("Montserrat"),
+#                                    # face = "bold",
+#                                    size = 12,
+#                                    colour = "black"),
+#         axis.text.y = element_text(family = gt::google_font("Montserrat"),
+#                                    # face = "bold",
+#                                    size = 10,
+#                                    colour = "black"),
+#         legend.title = element_text(family = gt::google_font("Montserrat"),
+#                                     face = "bold",
+#                                     size = 12,
+#                                     colour = "black",
+#                                     hjust = .0),
+#         legend.title.align = 0,
+#         legend.text = element_text(family = gt::google_font("Montserrat"),
+#                                    # face = "bold",
+#                                    size = 12,
+#                                    colour = "black",
+#                                    hjust = 0),
+#         legend.text.align = 0,
+#         legend.position="bottom",
+#         legend.key.size = unit(19, "pt"))
+
+# Paleta de colores
+
+color_scale <- rev(as.character(
+  paletteer::paletteer_c("grDevices::Burg", 30)
+))
+
+
+# Importar datos
+
+bd_impunidad <- read_excel("www/bd/bd_indice_impunidad.xlsx")
+catalogo_estatal <- read_excel("www/bd/catalogo_estatal.xlsx")
+#shp <- read_sf("https://raw.githubusercontent.com/JuveCampos/Shapes_Resiliencia_CDMX_CIDE/master/geojsons/Division%20Politica/DivisionEstatal.geojson")
+shp <- read_sf("www/DivisionEstatal.geojson")
+
+# Añadir cve 
+
+bd_impunidad <- bd_impunidad %>%
+  left_join(catalogo_estatal) %>%
+  mutate(ano = as.character(ano))
+
+
+lista_estados <- unique(bd_impunidad$cve_ent)
+names(lista_estados) <- unique(bd_impunidad$entidad)
+
+lista_indicadores_impunidad <- unique(bd_impunidad$indicador)
+names(lista_indicadores_impunidad) <- unique(bd_impunidad$nom_indicador)
+
+
+lista_anos_imp <- unique(bd_impunidad$ano)
+
+# Entidades con más y menos impunidad -------
+
+# fun_gen_caja_mayor <- function(ano_sel_imp){
+#   
+#   top_impunidad <- bd_impunidad %>%
+#     filter(nom_indicador == "Índice de impunidad", 
+#            ano == ano_sel_imp)  %>%
+#     mutate(valor = as.numeric(valor)) %>%
+#     slice_max(order_by = valor, n = 1, with_ties = FALSE) 
+#   
+#   
+#   vb_value <- top_impunidad$entidad
+#   vb_subtitle <- paste0(top_impunidad$valor, "%")
+# }
+
+
+  
+
+# bottom_impunidad <- bd_impunidad %>%
+#   filter(nom_indicador == "Índice de impunidad", 
+#          ano == ano_sel_imp)  %>%
+#   mutate(valor = as.numeric(valor)) %>%
+#   slice_max(order_by = valor, n = 1, with_ties = FALSE)  # use slice_min for “menor impunidad”
+
+ 
+
+
+# Mapa índice de Impunidad ----
+
+#Leaflet de solo un año 
+
+
+# datos_sel_impunidad <- bd_impunidad %>%
+#   filter(nom_indicador == "Índice de impunidad",
+#          ano == "2021")
+# mapx <- left_join(shp, datos_sel_impunidad, by = c("CVE_EDO" = "cve_ent"))
+# 
+# mapx$ranking <- rank(mapx$valor, ties.method = "first")
+# 
+# label <- paste0(
+#   "<b style='font-size:25px;'>", mapx$ranking, "/32</b><br>",
+#   "<b style='font-size:20px;'><span style='color:#9e3963;'>", mapx$entidad, "," ,mapx$ano,"</span> </b><br>",
+#   "<span style='font-size:32px;'>",round(mapx$valor, 2), "%</span>")
+# 
+# paleta <- colorNumeric(palette = color_scale,
+#                        domain = mapx$valor, reverse = F)
+# 
+# #paleta <- colorNumeric(palette = color_scale,
+# #                       domain = c(0,100),
+# #                       reverse = F)
+# 
+# #pasos para un leaflet
+# mapa_base_indice <-  #0. base de datos de la cual trabajará
+#   leaflet(mapx) %>%  #1. llamar a leaflet
+#   addProviderTiles("CartoDB.DarkMatter") %>%  #2. elegir el mapa base, hay un catálogo y es lo que está entre comillas
+#   addPolygons(color = "white", #3. añadir polígono
+#               fillColor = paleta(mapx$valor), #paleta de colores y adentro la columna de la que saca el valor
+#               weight = .5, #tamaño linea
+#               label = lapply(label, HTML),
+#               fillOpacity = 0.8) %>%
+#   addLegend(
+#     opacity = .9,
+#     position = "topright",
+#     pal = paleta,
+#     values = mapx$valor,
+#     title = paste("Índice de impunidad<br>Añol:"),
+#     labels = FALSE,
+#     labFormat = function(type, cuts, p) {
+#       return(c("Menor", "", "", "Mayor"))
+#     })
+# 
+# mapa_base_indice
+
+
+#shp <- read_sf("https://raw.githubusercontent.com/JuveCampos/Shapes_Resiliencia_CDMX_CIDE/master/geojsons/Division%20Politica/DivisionEstatal.geojson")
+
+gen_mapa_impunidad <- function(ano_sel_imp){
+  
+  datos_sel_impunidad <- bd_impunidad %>%
+    filter(nom_indicador == "Índice de impunidad", 
+           ano == ano_sel_imp) 
+  
+  
+  mapx <- left_join(shp, datos_sel_impunidad, by = c("CVE_EDO" = "cve_ent"))  
+  
+  mapx$ranking <- rank(mapx$valor, ties.method = "first")
+  
+  label <- paste0(
+    "<b style='font-size:25px;'>", mapx$ranking, "/32</b><br>",
+    "<b style='font-size:20px;'><span style='color:#9e3963;'>", mapx$entidad, "," ,mapx$ano,"</span> </b><br>",
+    "<span style='font-size:32px;'>",round(mapx$valor, 2), "%</span>")
+  
+  paleta <- colorNumeric(palette = color_scale, 
+                         domain = mapx$valor, reverse = F)
+  
+  #paleta <- colorNumeric(palette = color_scale, 
+  #                       domain = c(0,100),
+  #                       reverse = F)
+  
+  
+  
+  #pasos para un leaflet  
+  mapa_base_indice <-  #0. base de datos de la cual trabajará
+    leaflet(mapx) %>%  #1. llamar a leaflet
+    addProviderTiles("CartoDB.DarkMatter") %>%  #2. elegir el mapa base, hay un catálogo y es lo que está entre comillas
+    addPolygons(color = "white", #3. añadir polígono
+                fillColor = paleta(mapx$valor), #paleta de colores y adentro la columna de la que saca el valor 
+                weight = .5, #tamaño linea
+                label = lapply(label, HTML),
+                fillOpacity = 0.8) %>% 
+    addLegend(
+      opacity = .9, 
+      position = "topright",
+      pal = paleta,
+      values = mapx$valor,
+      title = paste("Índice de impunidad<br>Año:", ano_sel_imp),  
+      labels = FALSE,
+      labFormat = function(type, cuts, p) { 
+        return(c("Menor", "", "", "Mayor"))
+      })
+  
+  
+  mapa_base_indice 
+  
+}
+
+
+gen_mapa_impunidad("2020")
+
+# Gráfica de barras índice de Impunidad -----
+
+opciones_impunidad <- c("Índice de impunidad", "Desestimaciones por no ser un delito", 
+                        "Casos totales por resolver", "Soluciones efectivas")
+
+#ind_sel== "índice de impunidad"
+
+gen_barras_imp <- function(ind_sel, ano_sel_imp){
+  
+  datos_sel <- bd_impunidad %>%
+    filter(nom_indicador %in% opciones_impunidad) %>%
+    filter(nom_indicador == ind_sel, 
+           ano== ano_sel_imp) %>% 
+    left_join(catalogo_estatal) 
+  
+  
+  g <- datos_sel %>% 
+    ggplot(aes(x = reorder(entidad, -valor), 
+               y = valor, 
+               fill = valor, 
+               text = paste0( "<span style='font-size:24px;'><b>", entidad, ", " ,ano,  "</b></span><br><br>",
+                              "<span style='font-size:18px;'>", prettyNum(round(valor, 2), big.mark = ","))
+    )) + 
+    geom_col() + 
+    coord_flip() +
+    scale_fill_gradientn(colors = color_scale) + 
+    theme_bw() + 
+    labs(#title = datos_sel$nom_indicador, 
+      x = NULL, y = NULL) + 
+    scale_y_continuous(expand = expansion(c(0, 0.1)), 
+                       labels = comma_format()) + 
+    theme(
+      panel.grid = element_blank(), 
+      panel.border = element_blank(), 
+      axis.line = element_line(), 
+      legend.position = "none"
+    ) +
+    geom_text(aes(label = valor), hjust = -0.5, colour = "#535353") +
+    guides(fill = "none")
+  
+  ggplotly(g, tooltip = "text") 
+  
+}
+
+
+gen_barras_imp("Desestimaciones por no ser un delito", "2021")
+
+
+# Gráfica de línea de Impunidad -------------
+
+
+gen_lineas_imp <- function(ind_sel){
+  
+  datos_sel <- bd_impunidad %>%
+    filter(nom_indicador %in% opciones_impunidad) %>%
+    filter(nom_indicador == ind_sel) %>% 
+    left_join(catalogo_estatal) 
+  
+  # Get the last year for each entity to position labels
+  datos_labels <- datos_sel %>%
+    group_by(entidad) %>%
+    slice_max(ano, n = 1) %>%
+    ungroup()
+  
+  g <- datos_sel %>% 
+    ggplot(aes(x = ano, 
+               y = valor, 
+               group = entidad, 
+               text = if(ind_sel == "Índice de impunidad"){
+                 paste0(
+                 "<span style='font-size:24px;'><b>", entidad, " " ,ano,  "</b></span><br><br>",
+                 "<span style='font-size:18px;'>", prettyNum(round(valor, 2), big.mark = ","), " %")} else {
+                   paste0(
+                     "<span style='font-size:24px;'><b>", entidad, " " ,ano,  "</b></span><br><br>",
+                     "<span style='font-size:18px;'>", prettyNum(round(valor, 2), big.mark = ",")) 
+                 }
+    )) +
+    geom_line(size = 0.5, color = "#C1766FFF") +
+    geom_point(size = 2, color = "#541F3FFF") +
+    geom_text(data = datos_labels, 
+              aes(x = ano, y = valor, label = entidad),
+              hjust = -0.1, vjust = 0.5, size = 3, color = "#541F3FFF") +
+    theme_bw() +
+    labs(
+      x = "Año",
+      y = ""
+    ) +
+    scale_y_continuous(
+      labels = if(ind_sel == "Índice de impunidad") {
+        function(x) paste0(x, "%")
+      } else {
+        comma_format()
+      }
+    ) + 
+    scale_x_discrete(expand = expansion(mult = c(0.05, 0.15))) +
+    theme(
+      panel.grid = element_blank(),
+      legend.position = "none")  # Remove legend completely
+  
+  ggplotly(g, tooltip = "text")
+}
+
+gen_lineas_imp("Desestimaciones por no ser un delito")
+
+
+gen_lineas_imp <- function(ind_sel, entidades_resaltadas){
+  
+  datos_sel <- bd_impunidad %>%
+    #filter(nom_indicador %in% opciones_impunidad) %>%
+    filter(nom_indicador == ind_sel) %>% 
+    left_join(catalogo_estatal) 
+  
+  
+  datos_sel <- datos_sel %>%
+    mutate(
+      is_selected = entidad %in% entidades_resaltadas,
+      line_color  = ifelse(is_selected, "#C1766F", "grey80"),
+      point_color = ifelse(is_selected, "#541F3F", "grey75"),
+      line_alpha  = ifelse(is_selected, 1, 0.1)
+    )
+  
+  
+  datos_labels <- datos_sel %>%
+    filter(is_selected) %>%
+    group_by(entidad) %>%
+    slice_max(ano, n = 1, with_ties = FALSE) %>%
+    ungroup()
+  
+  g <- datos_sel %>% 
+    ggplot(aes(x = ano, 
+               y = valor, 
+               group = entidad, 
+               text = if(ind_sel == "Índice de impunidad"){
+                 paste0(
+                   "<span style='font-size:24px;'><b>", entidad, " " ,ano,  "</b></span><br><br>",
+                   "<span style='font-size:18px;'>", prettyNum(round(valor, 2), big.mark = ","), " %")} else {
+                     paste0(
+                       "<span style='font-size:24px;'><b>", entidad, " " ,ano,  "</b></span><br><br>",
+                       "<span style='font-size:18px;'>", prettyNum(round(valor, 2), big.mark = ",")) 
+                   }
+    )) +
+    theme_bw() +
+    #geom_line(aes(color = line_color, alpha = line_alpha), linewidth = 0.5, show.legend = FALSE) +
+    #geom_point(aes(color = point_color, alpha = line_alpha), size = 2, show.legend = FALSE) +
+    geom_line(aes(color = I(line_color), alpha = line_alpha), size = 0.5, show.legend = FALSE) +
+    geom_point(aes(color = I(point_color), alpha = line_alpha), size = 2, show.legend = FALSE) +
+    scale_alpha_identity() +
+    geom_text(data = datos_labels, 
+              #inherit.aes = FALSE,
+              aes(x = ano, y = valor, label = entidad),
+              hjust = -0.1, vjust = 0.5, size = 3, color = "#541F3F") +
+    labs(
+      x = "Año",
+      y = ""
+    ) +
+    scale_y_continuous(
+      labels = if(ind_sel == "Índice de impunidad") {
+        function(x) paste0(x, "%")
+      } else {
+        comma_format()
+      }
+    ) + 
+    scale_x_discrete(expand = expansion(mult = c(0.05, 0.15))) +
+    theme(
+      panel.grid = element_blank(),
+      legend.position = "none")  # Remove legend completely
+  
+  ggplotly(g, tooltip = "text") %>% layout(showlegend = FALSE)
+}
+
+gen_lineas_imp("Desestimaciones por no ser un delito", "Oaxaca")
+
+
+
+# Tabla índice de Impunidad --------
+
+#rev(as.character(colorRampPalette(paletteer::paletteer_c("grDevices::Burg", 30))))
+
+#tabla para 2023
+
+tab_imp2023 <- bd_impunidad %>%
+  filter(ano == "2023") %>%
+  mutate(across(c(valor), as.numeric)) %>%
+  select(entidad, nom_indicador, valor) %>%
+  pivot_wider(names_from = "nom_indicador", 
+              values_from = "valor") %>%
+  select(Ranking, entidad, "Casos totales por resolver",  "Desestimaciones por no ser un delito", 
+         "Soluciones efectivas", "Índice de impunidad") %>%
+  arrange(Ranking) %>%
+  reactable(striped = T, 
+            defaultColDef = colDef( 
+              align = "center",
+              format = colFormat(separators = TRUE)),
+            columns = list( 
+              Ranking = colDef(filterable = TRUE, format = colFormat(suffix = "°")),
+              entidad = colDef( name="Entidad", filterable = TRUE, align = "left"),
+              "Desestimaciones por no ser un delito" = colDef(format = colFormat(separators = TRUE , digits = 0)),
+              "Índice de impunidad" = colDef(format = colFormat(suffix = "%", 
+                                                                digits = 1), 
+                                             style = function(valor) {
+                                               scaled <- (valor - 85) / (150 - 85)
+                                               scaled <- max(min(scaled, 1), 0)         
+                                               color <- color_scale[floor(scaled * 99) + 1]
+                                               list(
+                                                 background = color,
+                                                 color = ifelse(scaled > 0.13, "white", "black")
+                                               )
+                                             })),
+            pagination = F, 
+            compact = T,
+            bordered = T,
+            outlined = T
+  )
+
+tab_imp2023
+
+
+
+# Función generadores de tablas para cada año 
+
+fun_gen_tablas_impunidad <- function(bd_impunidad, color_scale) {
+  years <- c("2019", "2020", "2021", "2022", "2023")
+  
+  for (year in years) {
+    # Create the table for this year
+    table_name <- paste0("tab_imp", year)
+    
+    # Generate the table
+    table_data <- bd_impunidad %>%
+      filter(ano == year) %>%
+      mutate(across(c(valor), as.numeric)) %>%
+      select(entidad, nom_indicador, valor) %>%
+      pivot_wider(names_from = "nom_indicador", 
+                  values_from = "valor") %>%
+      arrange(Ranking) %>%
+      select(Ranking, entidad, "Casos totales por resolver",  "Desestimaciones por no ser un delito", 
+             "Soluciones efectivas", "Índice de impunidad") %>%
+      reactable(striped = T, 
+                defaultColDef = colDef( 
+                  align = "center",
+                  format = colFormat(separators = TRUE)),
+                columns = list( 
+                  Ranking = colDef(filterable = TRUE, format = colFormat(suffix = "°")),
+                  entidad = colDef( name="Entidad", filterable = TRUE, align = "left"),
+                  "Desestimaciones por no ser un delito" = colDef(format = colFormat(separators = TRUE , digits = 0)),
+                  "Índice de impunidad" = colDef(format = colFormat(suffix = "%", 
+                                                                    digits = 1), 
+                                                 style = function(valor) {
+                                                   scaled <- (valor - 85) / (150 - 85)
+                                                   scaled <- max(min(scaled, 1), 0)         
+                                                   color <- color_scale[floor(scaled * 99) + 1]
+                                                   list(
+                                                     background = color,
+                                                     color = ifelse(scaled > 0.13, "white", "black")
+                                                   )
+                                                 })),
+                pagination = F, 
+                compact = T,
+                bordered = T,
+                outlined = T
+      )
+    
+    # Assign to global environment with the desired name
+    # assign(table_name, table_data, envir = .GlobalEnv)
+    # 
+    # cat(paste("Created table:", table_name, "\n"))
+  }
+}
+
+# Usage:
+fun_gen_tablas_impunidad(bd_impunidad, color_scale)
+
+#bs4DashGallery()
+

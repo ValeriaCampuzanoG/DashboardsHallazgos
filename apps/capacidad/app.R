@@ -74,64 +74,80 @@ ui <-  dashboardPage(
           )
         ),
         hr(),
-        # Comienza card con las tres gráficas (total, por componente y por entidad)
-        # fluidRow(
-        #   bs4Card(
-        #     width = 12,
-        #     title = "Componentes del índice de capacidad",
-        #     solidHeader = TRUE,
-        #     collapsible = TRUE,
-        #     maximizable = TRUE, 
-        #     headerBorder = TRUE,
-        #     div(
-        #       style = "margin-bottom: 15px; display: flex; gap: 15px; align-items: end;",
-        #       div(
-        #         style = "width: 500px;",
-        #         selectInput(
-        #           inputId = "opcionBarrasImpunidad",
-        #           label = "Seleccione un indicador:",
-        #           choices = opciones_impunidad,
-        #           width = "100%"
-        #         )
-        #       ),
-        #       div(
-        #         style = "width: 500px;",
-        #         selectInput(
-        #           inputId = "anioBarrasImpunidad",
-        #           label = "Seleccione un año:",
-        #           choices = c("2020", "2021", "2022", "2023", "2024"),
-        #           selected = "2023",
-        #           width = "100%"
-        #         )
-        #       )
-        #     ),
-        #     fluidRow(
-        #       column(
-        #         width = 6,
-        #         h5( style = "text-align: center; margin-bottom: 10px;"),
-        #         plotlyOutput("grafica_barras_impunidad", height = "80vh") %>% withSpinner()
-        #       ),
-        #       column(
-        #         width = 6,
-        #         h5("", style = "text-align: center; margin-bottom: 10px;"),
-        #         plotlyOutput("grafica_lineas_impunidad", height = "80vh") %>% withSpinner(), 
-        #         shinyWidgets::pickerInput(
-        #           inputId = "seleccion_entidades_lineas_impunidad",
-        #           label = "Selecciona la(s) entidad(es):",
-        #           choices = unique(bd_impunidad$entidad),
-        #           multiple = TRUE,
-        #           selected = sort(x = unique(bd_impunidad$entidad)),
-        #           options = list(`actions-box` = TRUE,
-        #                          `deselect-all-text` = "Deseleccionar todas",
-        #                          `select-all-text` = "Seleccionar todas",
-        #                          `none-selected-text` = "Ninguna unidad seleccionada")
-        #         )
-        #       )
-        #     )
-        #   )
-        #   
-        # ),
-        # Termina card de las tres pestañas 
+        #Comienza card con las tres gráficas (total, por componente y por entidad)
+        fluidRow(
+          bs4Card(
+            width = 12,
+            title = "Componentes del índice de capacidad",
+            solidHeader = TRUE,
+            collapsible = TRUE,
+            maximizable = TRUE,
+            headerBorder = TRUE,
+            tabBox(
+              id = "card_tabs_capacidad_alt",
+              width = 12,
+              type = "tabs",
+              side = "left",          # or "right"
+              tabPanel("Total",    
+                       ggiraph::girafeOutput("grafica_barras_capacidad_tot", height = "90vh") %>% withSpinner()
+                       ),
+              tabPanel("Por componente", 
+                       div(
+                         style = "width: 500px;",
+                         selectInput(
+                           inputId = "selBarrasCapxInst",
+                           label = "Seleccione un componente del índice de capacidad:",
+                           choices = opciones_capacidad,
+                           width = "100%"
+                         )
+                       ),
+                       ggiraph::girafeOutput("grafica_barras_capacidad_inst", height = "90vh") %>% withSpinner()
+                       ),
+              tabPanel("Por entidad", 
+                       fluidRow(
+                         column(
+                           width = 3, 
+                           style = "width: 500px; margin-bottom: 20px;",
+                           selectInput(
+                             inputId = "selBarrasCapxEntidad",
+                             label = "Seleccione una entidad:",
+                             choices = unique(bd_capacidad$entidad),
+                             width = "100%"
+                           )),
+                         column( 
+                           width = 6, 
+                           bs4Dash::bs4ValueBoxOutput("box_info_capacidad_entidad", width = 12)
+                         )),
+                       fluidRow(
+                         column(
+                           width = 6,
+                           #h5("Poder Judicial | 30%", style = "text-align: center; margin-bottom: 10px;"),
+                           ggiraph::girafeOutput("grafica_barras_pj", height = "50vh") %>% withSpinner()
+                         ),
+                         column(
+                           width = 6,
+                           #h5("Fiscalía | 35%", style = "text-align: center; margin-bottom: 10px;"),
+                           ggiraph::girafeOutput("grafica_barras_fisc", height = "50vh") %>% withSpinner()
+                         )
+                       ),
+                       br(),
+                       fluidRow(
+                         column(
+                           width = 6,
+                           #h5("Defensoría Pública | 20%" , style = "text-align: center; margin-bottom: 10px;"),
+                           ggiraph::girafeOutput("grafica_barras_dp", height = "50vh") %>% withSpinner()
+                         ),
+                         column(
+                           width = 6,
+                           #h5("Órgano de coordinación | 15%", style = "text-align: center; margin-bottom: 10px;"),
+                           ggiraph::girafeOutput("grafica_barras_org", height = "50vh") %>% withSpinner()
+                         )
+                       )
+              )
+            )
+          )
+        ),
+        #Termina card de las tres pestañas
         br(),
         hr(),
         # Comienza tab de la tabla con la info de cada componente
@@ -186,7 +202,7 @@ server <- function(input, output, session) {
     bs4Dash::bs4ValueBox(  
       value = tags$span(vb_value, style = "font-size: 2.2rem; font-weight: 700;"),
       subtitle = "Entidad con mayor capacidad",
-      icon = icon("arrow-up"),  # arrow-down if you show “menor impunidad”
+      icon = icon("arrow-up"), 
       color = "fuchsia",
       width = 12
     )
@@ -224,16 +240,57 @@ server <- function(input, output, session) {
   
   
   #Barras totales de capacidad
-  output$grafica_barras_capacidad_tot <- ggiraph::renderGirafe({g_capacidad })
+  output$grafica_barras_capacidad_tot <- ggiraph::renderGirafe({g_capacidad})
   
   #Grafica de barras de capacidad por institución
-  output$grafica_barras_capacidad_inst <- renderPlotly({
-    gen_barras_cap_inst(ind_sel4 = input$selBarrasCapInst)
+  output$grafica_barras_capacidad_inst <- ggiraph::renderGirafe({
+    gen_barras_cap_inst(ind_sel = input$selBarrasCapxInst)
   })
   
-  #Grafica de barras de capacidad por estado
-  output$grafica_barras_capacidad_edo <- renderPlotly({
-    gen_barras_cap_edo(ind_sel5  = input$selBarrasImpuEdo)
+  
+  #Caja con el valor total de la entidad y el ranking
+  output$box_info_capacidad_entidad <- bs4Dash::renderValueBox({  
+    
+    texto <- gen_texto_capacidad_entidad(input$selBarrasCapxEntidad)
+    
+    bs4Dash::bs4ValueBox(  
+      value = tags$span(texto, style = "font-size: 2.2rem; font-weight: 700;"),
+      subtitle = paste0("Índice de capacidad y ranking de ", input$selBarrasCapxEntidad) ,
+      icon = icon("globe"),  
+      color = "fuchsia",
+      width = 12
+    )
+  })
+  
+  
+  
+  # Graficas con desagregacion de los componentes del índice por entidad
+  graficas_entidad <- reactive({
+    req(input$selBarrasCapxEntidad)
+    gen_grafica_capacidad_entidad(input$selBarrasCapxEntidad)
+  })
+  
+  
+  # Render each plot
+  output$grafica_barras_pj <- ggiraph::renderGirafe({
+    
+    #graficas_entidad()$grafica_pj
+    plots <- graficas_entidad(); req(is.list(plots), !is.null(plots$grafica_pj))
+    plots$grafica_pj
+  })
+  
+  output$grafica_barras_fisc <- ggiraph::renderGirafe({
+    #graficas_entidad()$grafica_fi
+    plots <- graficas_entidad(); req(is.list(plots), !is.null(plots$grafica_fi))
+    plots$grafica_fi
+  })
+  
+  output$grafica_barras_dp <- ggiraph::renderGirafe({
+    graficas_entidad()$grafica_dp
+  })
+  
+  output$grafica_barras_org <- ggiraph::renderGirafe({
+    graficas_entidad()$grafica_oc
   })
   
   #Tabla del índice de capacidad total
@@ -260,8 +317,6 @@ server <- function(input, output, session) {
   output$tablaCapacidadOrg <- renderReactable({
     tab_org_cap
   })
-  
-  
   
   
 }
