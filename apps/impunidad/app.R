@@ -11,8 +11,8 @@ library(leaflet)
 library(fresh)
 
 #source(file = "paquetes-setup.R")
-source(file = "importacion_textos.R")
-source(file = "helpers/impunidad/codigo_preparacion.R")
+#source(file = "importacion_textos.R")
+#source(file = "helpers/impunidad/codigo_preparacion.R")
 
 
 # ui
@@ -110,12 +110,12 @@ ui <-  dashboardPage(
               column(
                 width = 6,
                 h5( style = "text-align: center; margin-bottom: 10px;"),
-                plotlyOutput("grafica_barras_impunidad", height = "80vh") %>% withSpinner()
+                girafeOutput("grafica_barras_impunidad", height = "80vh") %>% withSpinner()
               ),
               column(
                 width = 6,
                 h5("", style = "text-align: center; margin-bottom: 10px;"),
-                plotlyOutput("grafica_lineas_impunidad", height = "80vh") %>% withSpinner(), 
+                girafeOutput("grafica_lineas_impunidad", height = "80vh") %>% withSpinner(), 
                 shinyWidgets::pickerInput(
                   inputId = "seleccion_entidades_lineas_impunidad",
                   label = "Selecciona la(s) entidad(es):",
@@ -175,9 +175,9 @@ server <- function(input, output, session) {
   #Caja de entidad con mayor impunidad
   output$box_impunidad_mas <- bs4Dash::renderValueBox({  
     top <- bd_impunidad %>%
-      filter(ano == input$anioBarrasImpunidad,
-             nom_indicador == "Índice de impunidad") %>%
-      mutate(valor = as.numeric(valor)) %>%
+      filter(ano == input$anioMapaImpunidad, #AQUÍ
+             nom_indicador == "Porcentaje de impunidad") %>%
+      mutate(valor = round(as.numeric(valor)*100, 2)) %>%
       slice_max(order_by = valor, n = 1, with_ties = FALSE) 
   
     vb_value <- paste0(top$entidad, " ", top$valor, " %" )
@@ -198,11 +198,11 @@ server <- function(input, output, session) {
     bottom <- bd_impunidad %>%
       dplyr::mutate(
         ano = as.character(ano),
-        valor = as.numeric(valor)
+        valor = round(as.numeric(valor)*100, 2)
       ) %>%
       dplyr::filter(
-        ano == as.character(input$anioBarrasImpunidad),
-        nom_indicador == "Índice de impunidad"
+        ano == as.character(input$anioMapaImpunidad), #AQUÍ
+        nom_indicador == "Porcentaje de impunidad"
       ) %>%
       dplyr::slice_min(order_by = valor, n = 1, with_ties = FALSE)
     
@@ -214,7 +214,7 @@ server <- function(input, output, session) {
       value = tags$span(vb_value, style = "font-size: 2.2rem; font-weight: 700;"),
       subtitle = "Entidad con menor impunidad",
       icon = icon("arrow-down"),
-      color = "maroon",
+      color = "success",
       width = 12
     )
   })
@@ -244,13 +244,13 @@ server <- function(input, output, session) {
     tab_imp2019
   })  
   #Grafica de barras de impunidad
-  output$grafica_barras_impunidad <- renderPlotly({
+  output$grafica_barras_impunidad <- renderGirafe({
     gen_barras_imp(ind_sel = input$opcionBarrasImpunidad, 
                    ano_sel_imp = input$anioBarrasImpunidad)
   })
   
   #Gráfica líneas de impunidad 
-  output$grafica_lineas_impunidad <- renderPlotly({
+  output$grafica_lineas_impunidad <- renderGirafe({
     gen_lineas_imp(ind_sel = input$opcionBarrasImpunidad, 
                    entidades_resaltadas = input$seleccion_entidades_lineas_impunidad)
   })
