@@ -12,7 +12,7 @@ library(fresh)
 
 #source(file = "paquetes-setup.R")
 #source(file = "importacion_textos.R")
-#source(file = "preparacion_tuberia.R")
+source(file = "helpers/impunidad/codigo_preparacion.r")
 
 
 # ui
@@ -33,64 +33,28 @@ ui <-  dashboardPage(
   #   skin = "light",
   #   border = TRUE
   # ),
-  # sidebar = bs4DashSidebar(
-  #   skin = "light",
-  #   title = "Índice de impunidad",
-  #   bs4SidebarMenu(
-  #     bs4SidebarMenuItem(
-  #       text = "Índice de impunidad",
-  #       tabName = "impunidad",
-  #       icon = icon("chart-line")
-  #       
-  #     )
-  #   )
-  # ),
-  
   sidebar = bs4DashSidebar(
-    status = "primary",
+    skin = "light",
     title = "Índice de impunidad",
-    brandColor = "purple",
-    src = "https://via.placeholder.com/30",
-    opacity = 0.8,
     bs4SidebarMenu(
       bs4SidebarMenuItem(
-        "HOME",
-        tabName = "home",
-        icon = "home"
-      ),
-      bs4SidebarMenuItem(
-        "ESTADOS",
-        tabName = "estados",
-        icon = "map"
-      ),
-      bs4SidebarMenuItem(
-        "THEMIS",
-        tabName = "themis",
-        icon = "balance-scale"
-      ),
-      bs4SidebarMenuItem(
-        "LABJUSTICIA 2.0",
-        tabName = "lab",
-        icon = "flask"
-      ),
-      bs4SidebarMenuItem(
-        "NOTICIAS",
-        tabName = "noticias",
-        icon = "newspaper"
+        text = "Índice de impunidad",
+        tabName = "impunidad",
+        icon = icon("chart-line")
+
       )
     )
   ),
-  
-  
+
   body = bs4DashBody(
     bs4TabItems(
       bs4TabItem(
         tabName = "impunidad",
-        jumbotron(
-          title = "Índice de impunidad",
-          status = "info",
-          lead = "prueba"
-        ), 
+        # jumbotron(
+        #   title = "Índice de impunidad",
+        #   status = "info",
+        #   lead = "prueba"
+        # ), 
         fluidRow(
           bs4Card(
             width = 12,
