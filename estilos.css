@@ -1,0 +1,178 @@
+/* ===== COLOR VARIABLES ===== */
+
+
+
+:root {
+  --primary-purple: #4a2b7f;
+  --accent-pink: #d97fa3;
+  --dark-purple: #2d1b4e;
+  --light-gray: #f5f5f5;
+  --text-gray: #6c757d;
+}
+
+/* ===== HERO SECTION ===== */
+.hero-section {
+  background: linear-gradient(135deg, #4a2b7f 0%, #5a3a8f 100%);
+  padding: 60px 20px;
+  margin-bottom: 40px;
+  border-radius: 8px;
+}
+
+.hero-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 40px;
+  flex-wrap: wrap;
+}
+
+.hero-content {
+  flex: 1;
+  min-width: 300px;
+  color: white;
+}
+
+.hero-title {
+  font-size: 3.5rem;
+  font-weight: 700;
+  margin: 0 0 10px 0;
+  line-height: 1.1;
+  letter-spacing: 0.5px;
+}
+
+.hero-subtitle {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #d97fa3;
+  margin: 0 0 15px 0;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.hero-description {
+  font-size: 1.05rem;
+  color: rgba(255, 255, 255, 0.95);
+  margin: 20px 0;
+  line-height: 1.6;
+  max-width: 500px;
+}
+
+.hero-button-container {
+  margin-top: 30px;
+}
+
+.btn-hero {
+  background-color: #d97fa3 !important;
+  border: none !important;
+  color: white !important;
+  padding: 15px 40px !important;
+  font-size: 1.05rem !important;
+  font-weight: 600 !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 4px 15px rgba(217, 127, 163, 0.3) !important;
+}
+
+.btn-hero:hover {
+  background-color: #c96892 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(217, 127, 163, 0.4) !important;
+}
+
+.btn-hero:active {
+  transform: translateY(0) !important;
+}
+
+/* ===== NAVBAR CUSTOMIZATION ===== */
+.navbar-custom {
+  background: linear-gradient(90deg, #4a2b7f 0%, #5a3a8f 100%);
+  border-bottom: 3px solid #d97fa3;
+}
+
+.navbar-brand {
+  color: white !important;
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+@media (max-width: 768px) {
+  .hero-section {
+    padding: 40px 15px;
+  }
+
+  .hero-container {
+    flex-direction: column;
+    gap: 30px;
+  }
+
+  .hero-title {
+    font-size: 2.5rem;
+  }
+
+  .hero-description {
+    font-size: 0.95rem;
+  }
+
+  .btn-hero {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-section {
+    padding: 30px 10px;
+    margin-bottom: 20px;
+  }
+
+  .hero-title {
+    font-size: 2rem;
+  }
+
+  .hero-subtitle {
+    font-size: 0.85rem;
+  }
+
+  .hero-description {
+    font-size: 0.9rem;
+  }
+
+  .btn-hero {
+    padding: 12px 30px !important;
+    font-size: 0.95rem !important;
+  }
+}
+
+/* ===== GENERAL STYLING ===== */
+body {
+  background-color: var(--light-gray);
+  color: #333;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.card {
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 6px;
+  transition: box-shadow 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.card-header {
+  background: linear-gradient(90deg, #4a2b7f 0%, #5a3a8f 100%);
+  border: none;
+  color: white;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--primary-purple);
+  font-weight: 700;
+}

@@ -12,17 +12,19 @@ library(fresh)
 
 #source(file = "paquetes-setup.R")
 #source(file = "importacion_textos.R")
-#source(file = "helpers/impunidad/codigo_preparacion.R")
+#source(file = "preparacion_tuberia.R")
 
 
 # ui
 ui <-  dashboardPage( 
+  
   
   freshTheme = theme_hgz, 
   
   help = NULL, 
   fullscreen = TRUE, 
   scrollToTop = TRUE,
+
   
   
   title = "Índice de impunidad",
@@ -31,18 +33,55 @@ ui <-  dashboardPage(
   #   skin = "light",
   #   border = TRUE
   # ),
+  # sidebar = bs4DashSidebar(
+  #   skin = "light",
+  #   title = "Índice de impunidad",
+  #   bs4SidebarMenu(
+  #     bs4SidebarMenuItem(
+  #       text = "Índice de impunidad",
+  #       tabName = "impunidad",
+  #       icon = icon("chart-line")
+  #       
+  #     )
+  #   )
+  # ),
+  
   sidebar = bs4DashSidebar(
-    skin = "light",
+    status = "primary",
     title = "Índice de impunidad",
+    brandColor = "purple",
+    src = "https://via.placeholder.com/30",
+    opacity = 0.8,
     bs4SidebarMenu(
       bs4SidebarMenuItem(
-        text = "Índice de impunidad",
-        tabName = "impunidad",
-        icon = icon("chart-line")
-        
+        "HOME",
+        tabName = "home",
+        icon = "home"
+      ),
+      bs4SidebarMenuItem(
+        "ESTADOS",
+        tabName = "estados",
+        icon = "map"
+      ),
+      bs4SidebarMenuItem(
+        "THEMIS",
+        tabName = "themis",
+        icon = "balance-scale"
+      ),
+      bs4SidebarMenuItem(
+        "LABJUSTICIA 2.0",
+        tabName = "lab",
+        icon = "flask"
+      ),
+      bs4SidebarMenuItem(
+        "NOTICIAS",
+        tabName = "noticias",
+        icon = "newspaper"
       )
     )
   ),
+  
+  
   body = bs4DashBody(
     bs4TabItems(
       bs4TabItem(
